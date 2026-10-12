@@ -1,0 +1,11 @@
+disallowed-methods = [
+  { path = "std::env::var", reason = "read the environment through yt::env::Env" },
+  { path = "std::env::var_os", reason = "read the environment through yt::env::Env" },
+  { path = "std::env::vars", reason = "read the environment through yt::env::Env" },
+  { path = "std::env::vars_os", reason = "read the environment through yt::env::Env" },
+  { path = "std::process::exit", reason = "return an ExitCode from main so destructors run" },
+]
+disallowed-macros = [
+  { path = "std::eprintln", reason = "a closed stderr makes it panic; use yt::ui::eprint_line" },
+  { path = "std::eprint", reason = "a closed stderr makes it panic; use yt::ui::eprint_line" },
+]

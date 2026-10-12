@@ -1,0 +1,65 @@
+min_version = "2026.10.6"
+
+[env]
+_.path = ["target/debug"]
+
+[tools]
+rust = { version = "1.99.0", components = "rustfmt,clippy" }
+hk = "2.5.0"
+pkl = "0.32.1"
+usage = "6.12.1"
+jactionlint = "1.8.2"
+cargo-deny = "0.20.2"
+cargo-binstall = "1.25.2"
+"cargo:cargo-nextest" = "0.9.148"
+cargo-insta = "1.49.0"
+release-plz = "0.3.171"
+
+[tasks.build]
+description = "Build the debug binary"
+run = "cargo build"
+
+[tasks.test]
+description = "Run the test suite"
+run = "cargo nextest run --no-tests=warn"
+
+[tasks.deny]
+description = "Check dependencies for security advisories and untrusted sources"
+run = "cargo deny check advisories sources"
+
+[tasks.lint]
+description = "Run all linters (see hk.pkl)"
+run = "hk check --all"
+
+[tasks.lint-fix]
+description = "Run all linters and apply fixes"
+run = "hk fix --all"
+
+[tasks.ci]
+description = "Run everything CI runs"
+depends = ["build", "lint", "test", "deny", "package"]
+
+[tasks.snapshots]
+description = "Run the tests and accept changed snapshots"
+run = "cargo insta test --accept --test-runner nextest"
+
+[tasks.test-contract]
+description = "Run the contract tests against YT_CONTRACT_URL with YT_CONTRACT_TOKEN in YT_CONTRACT_PROJECT"
+run = "cargo nextest run --test contract --no-capture"
+
+[tasks.package]
+description = "Check that the crate packages and builds as crates.io would receive it"
+run = "cargo package --locked --allow-dirty"
+
+[tasks.release-dry-run]
+description = "Preview the version and changelog release-plz would propose for the last commit"
+run = '''
+set -eu
+dir=$(mktemp -d)
+git worktree add --quiet --detach "$dir" HEAD
+trap 'git worktree remove --force "$dir"' EXIT
+cd "$dir"
+release-plz update
+git add --all --intent-to-add
+git --no-pager diff
+'''

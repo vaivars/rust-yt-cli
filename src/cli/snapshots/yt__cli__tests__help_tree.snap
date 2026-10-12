@@ -1,0 +1,1790 @@
+---
+source: src/cli/mod.rs
+expression: "harness::help_tree(Yt::spec(), Page::Long)"
+---
+=== yt ===
+yt [version]
+Command line interface for JetBrains YouTrack
+
+Usage: yt [FLAGS] <SUBCOMMAND>
+
+Commands:
+  api         Send a request to the YouTrack REST API and print its JSON
+              response
+  article     Work with knowledge base articles
+  auth        Sign in and manage credentials
+  board       Work with agile boards and sprints
+  completion  Print a shell completion script
+  config      Show and change settings
+  issue       Work with issues
+  profile     Manage profiles (a YouTrack instance and an account)
+  project     Work with projects
+  time        Log and list spent time
+  help        Print this message or the help of the given subcommand(s)
+
+Flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+  -h, --help               Print help
+  -V, --version            Print version
+
+=== yt auth ===
+Sign in and manage credentials
+
+Usage: yt auth <SUBCOMMAND>
+
+Commands:
+  login   Sign in to a YouTrack instance
+  logout  Sign out: delete the stored credential
+  status  Show which profile is used and whether its sign-in works
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt auth login ===
+Sign in to a YouTrack instance
+
+Usage: yt auth login [FLAGS] [URL]
+
+Arguments:
+  [URL]  YouTrack URL, e.g. https://acme.youtrack.cloud
+
+Flags:
+      --method <METHOD>    How to sign in
+                           [possible values: browser, token]
+      --client-id <ID>     OAuth client ID from your YouTrack administrator
+                           [env: YT_OAUTH_CLIENT_ID]
+      --token-stdin        Read a permanent token from stdin
+      --no-browser         Do not open a browser; finish by pasting the address
+                           instead
+      --revocable          Also allow `yt auth logout` to revoke this sign-in on
+                           the server (shown to you as "YouTrack Administration"
+                           access)
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt auth status ===
+Show which profile is used and whether its sign-in works
+
+Usage: yt auth status [--offline]
+
+Flags:
+      --offline            Do not contact the server
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt auth logout ===
+Sign out: delete the stored credential
+
+Usage: yt auth logout
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue ===
+Work with issues
+
+Usage: yt issue <SUBCOMMAND>
+
+Commands:
+  attachment  Work with issue attachments
+  command     Apply a YouTrack command to issues
+  comment     Work with issue comments
+  create      Create an issue
+  delete      Delete issues
+  edit        Change issues
+  link        Work with issue links
+  list        List issues matching a YouTrack query [aliases: ls]
+  show        Show an issue
+  tag         Add or remove issue tags
+  help        Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue create ===
+Create an issue
+
+Usage: yt issue create [FLAGS]
+
+Flags:
+  -p, --project <PROJECT>   Project short name
+  -s, --summary <TEXT>      Summary
+  -b, --body <TEXT>         Description (Markdown)
+      --body-file <PATH>    Read the description from a file, or `-` for stdin
+  -f, --field <NAME=VALUE>  Custom field: NAME=VALUE (repeatable)
+      --dry-run             Show what would be created without creating it
+      --no-validate         Skip client-side field validation
+  -w, --web                 Open the new issue in the browser instead of
+                            printing its URL
+  -h, --help                Print help
+
+Global flags:
+      --profile <PROFILE>   Profile to use [env: YT_PROFILE]
+      --format <FORMAT>     Output format (default: table) [env: YT_FORMAT]
+                            [possible values: table, json, ndjson]
+  -v, --verbose             More log output: -v for debug, -vv for trace
+  -q, --quiet               Only print errors
+      --no-color            Disable color
+      --no-input            Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                 Confirm destructive actions without asking
+
+=== yt issue edit ===
+Change issues
+
+Usage: yt issue edit [FLAGS] <ID>…
+
+Arguments:
+  <ID>…  Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+  -s, --summary <TEXT>      New summary (one issue)
+  -b, --body <TEXT>         New description (one issue)
+      --body-file <PATH>    Read the description from a file, or `-` for stdin
+  -f, --field <NAME=VALUE>  Custom field: NAME=VALUE, NAME+=VALUE, NAME-=VALUE,
+                            or NAME= to clear (repeatable)
+      --dry-run             Show the changes without applying them
+      --no-validate         Skip client-side field validation
+  -h, --help                Print help
+
+Global flags:
+      --profile <PROFILE>   Profile to use [env: YT_PROFILE]
+      --format <FORMAT>     Output format (default: table) [env: YT_FORMAT]
+                            [possible values: table, json, ndjson]
+  -v, --verbose             More log output: -v for debug, -vv for trace
+  -q, --quiet               Only print errors
+      --no-color            Disable color
+      --no-input            Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                 Confirm destructive actions without asking
+
+=== yt issue command ===
+Apply a YouTrack command to issues
+
+Usage: yt issue command [--dry-run] <COMMAND> <ID>…
+
+Arguments:
+  <COMMAND>  Command text, e.g. `State Fixed` or `for me`
+  <ID>…      Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+      --dry-run            Show how YouTrack reads the command without applying
+                           it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue delete ===
+Delete issues
+
+Usage: yt issue delete <ID>…
+
+Arguments:
+  <ID>…  Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue comment ===
+Work with issue comments
+
+Usage: yt issue comment <SUBCOMMAND>
+
+Commands:
+  add     Add a comment
+  delete  Delete a comment
+  edit    Change a comment's text
+  list    List an issue's comments [aliases: ls]
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue comment list ===
+List an issue's comments
+
+Usage: yt issue comment list <ID>
+
+Arguments:
+  <ID>  Issue ID or URL
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue comment add ===
+Add a comment
+
+Usage: yt issue comment add [-b --body <TEXT>] [--body-file <PATH>] <ID>
+
+Arguments:
+  <ID>  Issue ID or URL
+
+Flags:
+  -b, --body <TEXT>        Comment text (Markdown)
+      --body-file <PATH>   Read the text from a file, or `-` for stdin
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue comment edit ===
+Change a comment's text
+
+Usage: yt issue comment edit [-b --body <TEXT>] [--body-file <PATH>] <ID> <COMMENT>
+
+Arguments:
+  <ID>       Issue ID or URL
+  <COMMENT>  Comment ID, as `yt issue comment list` shows it
+
+Flags:
+  -b, --body <TEXT>        New text (Markdown)
+      --body-file <PATH>   Read the text from a file, or `-` for stdin
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue comment delete ===
+Delete a comment
+
+Usage: yt issue comment delete <ID> <COMMENT>
+
+Arguments:
+  <ID>       Issue ID or URL
+  <COMMENT>  Comment ID, as `yt issue comment list` shows it
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue tag ===
+Add or remove issue tags
+
+Usage: yt issue tag <SUBCOMMAND>
+
+Commands:
+  add     Tag an issue
+  remove  Remove tags from an issue
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue tag add ===
+Tag an issue
+
+Usage: yt issue tag add [--dry-run] [--no-validate] <ID> <TAG>…
+
+Arguments:
+  <ID>    Issue ID or URL
+  <TAG>…  Tag names
+
+Flags:
+      --dry-run            Show the changes without applying them
+      --no-validate        Create tags that don't exist yet
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue tag remove ===
+Remove tags from an issue
+
+Usage: yt issue tag remove [--dry-run] [--no-validate] <ID> <TAG>…
+
+Arguments:
+  <ID>    Issue ID or URL
+  <TAG>…  Tag names
+
+Flags:
+      --dry-run            Show the changes without applying them
+      --no-validate        Send tag names as given
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue link ===
+Work with issue links
+
+Usage: yt issue link <SUBCOMMAND>
+
+Commands:
+  add     Link an issue to another
+  list    List an issue's links [aliases: ls]
+  remove  Remove a link between two issues
+  types   List the instance's link types
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue link list ===
+List an issue's links
+
+Usage: yt issue link list <ID>
+
+Arguments:
+  <ID>  Issue ID or URL
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue link add ===
+Link an issue to another
+
+Usage: yt issue link add [--dry-run] [--no-validate] <ARGS>…
+
+Arguments:
+  <ID>      Issue ID or URL
+  <TYPE>    Link direction words, e.g. `depends on` or `relates to` (see `yt
+            issue link types`)
+  <TARGET>  The other issue's ID or URL
+
+Flags:
+      --dry-run            Show the change without applying it
+      --no-validate        Send the type as given
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue link remove ===
+Remove a link between two issues
+
+Usage: yt issue link remove [--dry-run] [--no-validate] <ARGS>…
+
+Arguments:
+  <ID>      Issue ID or URL
+  <TYPE>    Link direction words, e.g. `depends on`
+  <TARGET>  The other issue's ID or URL
+
+Flags:
+      --dry-run            Show the change without applying it
+      --no-validate        Send the type as given
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue link types ===
+List the instance's link types
+
+Usage: yt issue link types
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue attachment ===
+Work with issue attachments
+
+Usage: yt issue attachment <SUBCOMMAND>
+
+Commands:
+  delete    Delete an attachment
+  download  Download an attachment
+  list      List an issue's attachments [aliases: ls]
+  upload    Upload files to an issue
+  help      Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue attachment list ===
+List an issue's attachments
+
+Usage: yt issue attachment list <ID>
+
+Arguments:
+  <ID>  Issue ID or URL
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue attachment upload ===
+Upload files to an issue
+
+Usage: yt issue attachment upload <ID> <FILE>…
+
+Arguments:
+  <ID>     Issue ID or URL
+  <FILE>…  Files to upload
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue attachment download ===
+Download an attachment
+
+Usage: yt issue attachment download [-o --output <PATH>] <ID> <NAME>
+
+Arguments:
+  <ID>    Issue ID or URL
+  <NAME>  Attachment name or ID
+
+Flags:
+  -o, --output <PATH>      Where to save it; `-` writes to stdout (default:
+                           ./NAME)
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue attachment delete ===
+Delete an attachment
+
+Usage: yt issue attachment delete <ID> <NAME>
+
+Arguments:
+  <ID>    Issue ID or URL
+  <NAME>  Attachment name or ID
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue list ===
+List issues matching a YouTrack query
+
+Usage: yt issue list [FLAGS] [QUERY]…
+
+Arguments:
+  [QUERY]…  YouTrack search query, e.g. `for: me #Unresolved`
+
+Flags:
+      --query <QUERY>      YouTrack search query, instead of QUERY
+  -p, --project <PROJECT>  Only issues of this project
+  -n, --limit <LIMIT>      How many issues to show
+                           (default: 50)
+      --all                Show every matching issue
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt issue show ===
+Show an issue
+
+Usage: yt issue show [-w --web] <ID>
+
+Arguments:
+  <ID>  Issue ID (WEB-42) or issue URL
+
+Flags:
+  -w, --web                Open the issue in the browser instead of printing it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt project ===
+Work with projects
+
+Usage: yt project <SUBCOMMAND>
+
+Commands:
+  fields  Show a project's custom fields
+  list    List projects [aliases: ls]
+  show    Show a project
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt project list ===
+List projects
+
+Usage: yt project list [-n --limit <LIMIT>] [--all]
+
+Flags:
+  -n, --limit <LIMIT>      How many projects to show
+                           (default: 50)
+      --all                Show every project
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt project show ===
+Show a project
+
+Usage: yt project show [-w --web] <PROJECT>
+
+Arguments:
+  <PROJECT>  Project short name
+
+Flags:
+  -w, --web                Open the project in the browser instead of printing
+                           it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt project fields ===
+Show a project's custom fields
+
+Usage: yt project fields <PROJECT>
+
+Arguments:
+  <PROJECT>  Project short name
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt time ===
+Log and list spent time
+
+Usage: yt time <SUBCOMMAND>
+
+Commands:
+  delete  Delete work items
+  edit    Change a work item
+  list    List work items, newest first [aliases: ls]
+  log     Log time spent on an issue
+  types   List work item types
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt time log ===
+Log time spent on an issue
+
+Usage: yt time log [FLAGS] <ID> <DURATION>
+
+Arguments:
+  <ID>        Issue ID or URL
+  <DURATION>  Time spent, e.g. `1h 30m` or `2d`
+
+Flags:
+      --date <DATE>        Day the work was done, YYYY-MM-DD (default: today)
+      --type <TYPE>        Work item type, e.g. `Development`
+  -b, --body <TEXT>        What was done (Markdown)
+      --body-file <PATH>   Read the text from a file, or `-` for stdin
+      --dry-run            Show what would be logged without logging it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt time list ===
+List work items, newest first
+
+Usage: yt time list [FLAGS] [QUERY]…
+
+Arguments:
+  [QUERY]…  YouTrack issue query, e.g. `WEB-42` or `#Unresolved`
+
+Flags:
+      --query <QUERY>      YouTrack issue query, instead of QUERY
+  -p, --project <PROJECT>  Only work items on issues of this project
+      --from <DATE>        First day, YYYY-MM-DD
+      --to <DATE>          Last day, YYYY-MM-DD
+      --author <LOGIN>     Whose work items: a login, `me` or `all`
+                           (default: me)
+  -n, --limit <LIMIT>      How many work items to show
+                           (default: 50)
+      --all                Show every matching work item
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt time edit ===
+Change a work item
+
+Usage: yt time edit [FLAGS] <ID> <ITEM>
+
+Arguments:
+  <ID>    Issue ID or URL
+  <ITEM>  Work item ID, as `yt time list` shows it
+
+Flags:
+      --duration <DURATION>  New time spent, e.g. `2h`
+      --date <DATE>          New day, YYYY-MM-DD
+      --type <TYPE>          New work item type
+  -b, --body <TEXT>          New text (Markdown)
+      --body-file <PATH>     Read the text from a file, or `-` for stdin
+      --dry-run              Show the change without applying it
+  -h, --help                 Print help
+
+Global flags:
+      --profile <PROFILE>    Profile to use [env: YT_PROFILE]
+      --format <FORMAT>      Output format (default: table) [env: YT_FORMAT]
+                             [possible values: table, json, ndjson]
+  -v, --verbose              More log output: -v for debug, -vv for trace
+  -q, --quiet                Only print errors
+      --no-color             Disable color
+      --no-input             Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                  Confirm destructive actions without asking
+
+=== yt time delete ===
+Delete work items
+
+Usage: yt time delete <ID> <ITEM>…
+
+Arguments:
+  <ID>     Issue ID or URL
+  <ITEM>…  Work item IDs, as `yt time list` shows them
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt time types ===
+List work item types
+
+Usage: yt time types [-p --project <PROJECT>]
+
+Flags:
+  -p, --project <PROJECT>  Project short name (default: the repo or profile
+                           project; without one, the instance's types)
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article ===
+Work with knowledge base articles
+
+Usage: yt article <SUBCOMMAND>
+
+Commands:
+  attachment  Work with article attachments
+  comment     Work with article comments
+  create      Create an article
+  delete      Delete articles
+  edit        Change an article
+  list        List articles matching a YouTrack query [aliases: ls]
+  show        Show an article
+  help        Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article list ===
+List articles matching a YouTrack query
+
+Usage: yt article list [FLAGS] [QUERY]…
+
+Arguments:
+  [QUERY]…  YouTrack search query
+
+Flags:
+      --query <QUERY>      YouTrack search query, instead of QUERY
+  -p, --project <PROJECT>  Only articles of this project
+  -n, --limit <LIMIT>      How many articles to show
+                           (default: 50)
+      --all                Show every matching article
+      --tree               Show every matching article as a tree under its
+                           parent
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article show ===
+Show an article
+
+Usage: yt article show [-w --web] <ID>
+
+Arguments:
+  <ID>  Article ID (KB-A-12) or article URL
+
+Flags:
+  -w, --web                Open the article in the browser instead of printing
+                           it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article create ===
+Create an article
+
+Usage: yt article create [FLAGS]
+
+Flags:
+  -p, --project <PROJECT>  Project short name
+  -s, --summary <TEXT>     Title
+  -b, --body <TEXT>        Content (Markdown)
+      --body-file <PATH>   Read the content from a file, or `-` for stdin
+      --parent <ID>        Parent article ID or URL; the new article becomes its
+                           child
+  -w, --web                Open the new article in the browser instead of
+                           printing its URL
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article edit ===
+Change an article
+
+Usage: yt article edit [FLAGS] <ID>
+
+Arguments:
+  <ID>  Article ID or URL
+
+Flags:
+  -s, --summary <TEXT>     New title
+  -b, --body <TEXT>        New content (Markdown)
+      --body-file <PATH>   Read the content from a file, or `-` for stdin
+      --parent <ID>        New parent article ID or URL; empty moves the article
+                           to the top level
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article delete ===
+Delete articles
+
+Usage: yt article delete <ID>…
+
+Arguments:
+  <ID>…  Article IDs or URLs
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article comment ===
+Work with article comments
+
+Usage: yt article comment <SUBCOMMAND>
+
+Commands:
+  add     Add a comment
+  delete  Delete a comment
+  edit    Change a comment's text
+  list    List an article's comments [aliases: ls]
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article comment list ===
+List an article's comments
+
+Usage: yt article comment list <ID>
+
+Arguments:
+  <ID>  Article ID or URL
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article comment add ===
+Add a comment
+
+Usage: yt article comment add [-b --body <TEXT>] [--body-file <PATH>] <ID>
+
+Arguments:
+  <ID>  Article ID or URL
+
+Flags:
+  -b, --body <TEXT>        Comment text (Markdown)
+      --body-file <PATH>   Read the text from a file, or `-` for stdin
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article comment edit ===
+Change a comment's text
+
+Usage: yt article comment edit [-b --body <TEXT>] [--body-file <PATH>] <ID> <COMMENT>
+
+Arguments:
+  <ID>       Article ID or URL
+  <COMMENT>  Comment ID, as `yt article comment list` shows it
+
+Flags:
+  -b, --body <TEXT>        New text (Markdown)
+      --body-file <PATH>   Read the text from a file, or `-` for stdin
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article comment delete ===
+Delete a comment
+
+Usage: yt article comment delete <ID> <COMMENT>
+
+Arguments:
+  <ID>       Article ID or URL
+  <COMMENT>  Comment ID, as `yt article comment list` shows it
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article attachment ===
+Work with article attachments
+
+Usage: yt article attachment <SUBCOMMAND>
+
+Commands:
+  delete    Delete an attachment
+  download  Download an attachment
+  list      List an article's attachments [aliases: ls]
+  upload    Upload files to an article
+  help      Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article attachment list ===
+List an article's attachments
+
+Usage: yt article attachment list <ID>
+
+Arguments:
+  <ID>  Article ID or URL
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article attachment upload ===
+Upload files to an article
+
+Usage: yt article attachment upload <ID> <FILE>…
+
+Arguments:
+  <ID>     Article ID or URL
+  <FILE>…  Files to upload
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article attachment download ===
+Download an attachment
+
+Usage: yt article attachment download [-o --output <PATH>] <ID> <NAME>
+
+Arguments:
+  <ID>    Article ID or URL
+  <NAME>  Attachment name or ID
+
+Flags:
+  -o, --output <PATH>      Where to save it; `-` writes to stdout (default:
+                           ./NAME)
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt article attachment delete ===
+Delete an attachment
+
+Usage: yt article attachment delete <ID> <NAME>
+
+Arguments:
+  <ID>    Article ID or URL
+  <NAME>  Attachment name or ID
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board ===
+Work with agile boards and sprints
+
+Usage: yt board <SUBCOMMAND>
+
+Commands:
+  list    List agile boards [aliases: ls]
+  show    Show a board and its current sprint's issues by column
+  sprint  Work with a board's sprints
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board list ===
+List agile boards
+
+Usage: yt board list
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board show ===
+Show a board and its current sprint's issues by column
+
+Usage: yt board show [--resolved] [-w --web] <BOARD>
+
+Arguments:
+  <BOARD>  Board name or ID
+
+Flags:
+      --resolved           Also list the issues of resolved columns
+  -w, --web                Open the board in the browser instead of printing it
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint ===
+Work with a board's sprints
+
+Usage: yt board sprint <SUBCOMMAND>
+
+Commands:
+  add      Add issues to a sprint
+  create   Create a sprint on a board
+  current  Show the current sprint's issues by column
+  list     List a board's sprints [aliases: ls]
+  remove   Remove issues from a sprint
+  show     Show a sprint's issues by column
+  help     Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint list ===
+List a board's sprints
+
+Usage: yt board sprint list <BOARD>
+
+Arguments:
+  <BOARD>  Board name or ID
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint current ===
+Show the current sprint's issues by column
+
+Usage: yt board sprint current [--resolved] <BOARD>
+
+Arguments:
+  <BOARD>  Board name or ID
+
+Flags:
+      --resolved           Also list the issues of resolved columns
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint show ===
+Show a sprint's issues by column
+
+Usage: yt board sprint show [--resolved] <BOARD> <SPRINT>
+
+Arguments:
+  <BOARD>   Board name or ID
+  <SPRINT>  Sprint name or ID
+
+Flags:
+      --resolved           Also list the issues of resolved columns
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint create ===
+Create a sprint on a board
+
+Usage: yt board sprint create [FLAGS] <BOARD> <NAME>
+
+Arguments:
+  <BOARD>  Board name or ID
+  <NAME>   Sprint name
+
+Flags:
+      --start <DATE>       First day, YYYY-MM-DD
+      --finish <DATE>      Last day, YYYY-MM-DD
+      --goal <TEXT>        What the sprint is for
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint add ===
+Add issues to a sprint
+
+Usage: yt board sprint add <ARGS>…
+
+Arguments:
+  <BOARD>   Board name or ID
+  <SPRINT>  Sprint name or ID
+  <ID>…     Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt board sprint remove ===
+Remove issues from a sprint
+
+Usage: yt board sprint remove <ARGS>…
+
+Arguments:
+  <BOARD>   Board name or ID
+  <SPRINT>  Sprint name or ID
+  <ID>…     Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt profile ===
+Manage profiles (a YouTrack instance and an account)
+
+Usage: yt profile <SUBCOMMAND>
+
+Commands:
+  list    List profiles [aliases: ls]
+  remove  Remove a profile and its stored credential
+  use     Make a profile the default
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt profile list ===
+List profiles
+
+Usage: yt profile list
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt profile use ===
+Make a profile the default
+
+Usage: yt profile use <PROFILE>
+
+Arguments:
+  <PROFILE>  Profile name
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt profile remove ===
+Remove a profile and its stored credential
+
+Usage: yt profile remove <PROFILE>
+
+Arguments:
+  <PROFILE>  Profile name
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt config ===
+Show and change settings
+
+Usage: yt config <SUBCOMMAND>
+
+Commands:
+  get   Show one setting's value and where it came from
+  list  List every setting with its value [aliases: ls]
+  set   Change a setting in the global config file
+  help  Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt config list ===
+List every setting with its value
+
+Usage: yt config list
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt config get ===
+Show one setting's value and where it came from
+
+Usage: yt config get <KEY>
+
+Arguments:
+  <KEY>  Setting name, e.g. http_timeout
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt config set ===
+Change a setting in the global config file
+
+Usage: yt config set <KEY> <VALUE>
+
+Arguments:
+  <KEY>    Setting name, e.g. http_timeout
+  <VALUE>  New value
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt api ===
+Send a request to the YouTrack REST API and print its JSON response
+
+Usage: yt api [FLAGS] <PATH>
+
+Arguments:
+  <PATH>  Path under /api, e.g. `issues/WEB-1` or `admin/projects?$top=5`
+
+Flags:
+  -X, --method <METHOD>    HTTP method
+                           [possible values: GET, POST, DELETE]
+                           (default: GET)
+      --input <FILE>       JSON request body from a file, or `-` for stdin
+      --fields <SELECTOR>  `fields` selector to add to the query
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt completion ===
+Print a shell completion script
+
+Usage: yt completion <SHELL>
+
+Arguments:
+  <SHELL>  Shell to generate the script for
+           [possible values: bash, zsh, fish]
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
