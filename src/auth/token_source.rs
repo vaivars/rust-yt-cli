@@ -228,6 +228,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn an_automatically_registered_client_refreshes_with_its_document_url() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(body_string_contains(
+                "client_id=https%3A%2F%2Fvaivars.github.io%2Frust-yt-cli%2Foauth-client.json",
+            ))
+            .respond_with(fresh_tokens())
+            .expect(1)
+            .mount(&server)
+            .await;
+        keyring_core::set_default_store(keyring_core::mock::Store::new().unwrap());
+        let credential = OauthCredential {
+            client_id: crate::auth::login::CIMD_CLIENT_ID.into(),
+            ..credential(&server, 10)
+        };
+        credentials::save(ACCOUNT, &StoredCredential::Oauth(credential.clone()))
+            .await
+            .unwrap();
+        let state = tempfile::tempdir().unwrap();
+        let source = OAuthToken::new(http(), ACCOUNT, "acme", state.path(), credential);
+        assert_eq!(
+            source.bearer().await.unwrap().expose_secret(),
+            "new-access-0123456789"
+        );
+    }
+
+    #[tokio::test]
     async fn an_expiring_token_is_refreshed_and_saved() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

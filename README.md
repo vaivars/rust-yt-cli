@@ -43,7 +43,7 @@ The binaries are not signed by Apple. A browser download is quarantined; clear i
 yt auth login https://acme.youtrack.cloud
 ```
 
-- **Browser sign-in (OAuth):** `yt` opens YouTrack in your browser and you approve access there, with no token to create or copy. It needs an OAuth client that a YouTrack administrator registers once for the instance (Authorization Code with PKCE, no client secret, redirect URI `http://127.0.0.1:<any port>/callback`); `yt` explains the setup when the client is missing. Pass its ID with `--client-id` or `YT_OAUTH_CLIENT_ID`. Over SSH, or with `--no-browser`, `yt` prints the sign-in address instead: open it on any device, approve, and paste back the address the browser lands on.
+- **Browser sign-in (OAuth):** `yt` opens YouTrack in your browser and you approve access there, with no token to create or copy. It works without any setup on instances where an administrator turned on *Allow automatic OAuth client registration via CIMD* (YouTrack 2026.2 or later): `yt` registers itself. Otherwise an administrator registers an OAuth client once for the instance (Authorization Code with PKCE, no client secret, redirect URI `http://127.0.0.1:<any port>/callback`), and you pass its ID with `--client-id` or `YT_OAUTH_CLIENT_ID`; `yt` explains the setup when neither is available. Over SSH, or with `--no-browser`, `yt` prints the sign-in address instead: open it on any device, approve, and paste back the address the browser lands on.
 - **Permanent token:** create one in your YouTrack profile and sign in with `--method token`, or pipe it in with `--token-stdin`.
 - **Scripts and CI:** set `YOUTRACK_URL` and `YOUTRACK_TOKEN` instead of signing in. `YOUTRACK_TOKEN` alone replaces the stored sign-in of the profile in use.
 

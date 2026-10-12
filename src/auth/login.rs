@@ -21,6 +21,9 @@ use crate::ui::{Choice, Ui};
 /// The redirect port named when no listener runs (paste-back); any port is accepted on a registered loopback URI.
 const PASTE_PORT: u16 = 8765;
 
+/// yt's client ID where an instance allows automatic OAuth client registration (CIMD): the URL of its client metadata document, served from the `docs` branch. The URL must never change.
+pub const CIMD_CLIENT_ID: &str = "https://vaivars.github.io/rust-yt-cli/oauth-client.json";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Method {
     Browser,
@@ -90,7 +93,9 @@ pub async fn login(le: &LoginEnv<'_>, request: LoginRequest) -> Result<LoginOutc
     let http = crate::http::client(le.http)?;
     let discovery = discover_with_prompt(le, &http, url).await?;
     check_requested(&config, profile.as_deref(), &discovery.url, None)?;
-    let mut client_id = client_id.or_else(|| client_id_for(&config, &discovery.url));
+    let mut client_id = client_id
+        .or_else(|| client_id_for(&config, &discovery.url))
+        .or_else(|| discovery.cimd_supported.then(|| CIMD_CLIENT_ID.to_string()));
     if method == Method::Browser && client_id.is_none() {
         match ask_for_client(le, &discovery).await? {
             Some(id) => client_id = Some(id),
@@ -198,11 +203,7 @@ async fn discover_with_prompt(
 
 /// Explains what an administrator must set up; `Some(id)` to continue in the browser, `None` to use a token.
 async fn ask_for_client(le: &LoginEnv<'_>, discovery: &Discovery) -> Result<Option<String>> {
-    crate::ui::eprint_line(&format!(
-        "Browser sign-in needs an OAuth client for yt on {}.\nAn administrator creates it under Administration › Access Management › OAuth Clients:\nAuthorization Code with PKCE, no client secret, redirect URI {} (any port works).\n",
-        discovery.url,
-        loopback::redirect_uri(PASTE_PORT)
-    ));
+    crate::ui::eprint_line(&client_setup(&discovery.url));
     let choices = vec![
         Choice {
             value: Next::ClientId,
@@ -231,6 +232,14 @@ async fn ask_for_client(le: &LoginEnv<'_>, discovery: &Discovery) -> Result<Opti
         Next::Token => Ok(None),
         Next::Cancel => Err(YtError::Cancelled.into()),
     }
+}
+
+/// What an administrator sets up so yt can sign in through the browser.
+fn client_setup(url: &InstanceUrl) -> String {
+    format!(
+        "Browser sign-in needs an OAuth client for yt on {url}. An administrator sets it up under Administration › Access Management › OAuth Clients, either way:\n- turn on \"Allow automatic OAuth client registration via CIMD\", and yt registers itself, or\n- create a client: Authorization Code with PKCE, no client secret, redirect URI {} (any port works).\n",
+        loopback::redirect_uri(PASTE_PORT)
+    )
 }
 
 async fn browser_login(
@@ -507,7 +516,7 @@ mod tests {
 
     use serde_json::json;
     use url::Url;
-    use wiremock::matchers::{method, path};
+    use wiremock::matchers::{body_string_contains, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use super::*;
@@ -536,6 +545,10 @@ mod tests {
     }
 
     async fn youtrack(users_me: ResponseTemplate) -> MockServer {
+        instance(users_me, false).await
+    }
+
+    async fn instance(users_me: ResponseTemplate, cimd: bool) -> MockServer {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/api/config"))
@@ -550,7 +563,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({
                 "authorization_endpoint": format!("{}/hub/api/rest/oauth2/auth", server.uri()),
                 "token_endpoint": format!("{}/hub/api/rest/oauth2/token", server.uri()),
-                "client_id_metadata_document_supported": false
+                "client_id_metadata_document_supported": cimd
             })))
             .mount(&server)
             .await;
@@ -809,6 +822,105 @@ mod tests {
         };
         login(&le, request).await.unwrap();
         assert!(f.store.load().unwrap().profiles["acme"].revocable);
+    }
+
+    /// Expects exactly one code exchange, made with `client_id`.
+    async fn oauth_endpoints_for(server: &MockServer, client_id: &str) {
+        let encoded: String = url::form_urlencoded::byte_serialize(client_id.as_bytes()).collect();
+        Mock::given(method("GET"))
+            .and(path("/hub/api/rest/oauth2/auth"))
+            .respond_with(ResponseTemplate::new(303).insert_header("location", "/hub/auth/login"))
+            .mount(server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path("/hub/api/rest/oauth2/token"))
+            .and(body_string_contains(format!("client_id={encoded}")))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "access_token": "access-0123456789",
+                "refresh_token": "refresh-0123456789",
+                "expires_in": 3600,
+                "token_type": "Bearer"
+            })))
+            .expect(1)
+            .mount(server)
+            .await;
+    }
+
+    /// Signs in as profile `acme` through the browser and returns the client ID the authorize URL named.
+    async fn browser_sign_in(f: &Fixture, server: &MockServer, client_id: Option<&str>) -> String {
+        let seen = std::sync::Mutex::new(None);
+        let open = |url: &str| {
+            let query: std::collections::HashMap<String, String> = Url::parse(url)
+                .unwrap()
+                .query_pairs()
+                .into_owned()
+                .collect();
+            *seen.lock().unwrap() = query.get("client_id").cloned();
+            approve(url)
+        };
+        let ui = Ui::new(true, false);
+        let le = LoginEnv {
+            env: &f.env,
+            ui: &ui,
+            store: &f.store,
+            http: &f.http,
+            open_browser: &open,
+        };
+        let request = LoginRequest {
+            url: Some(server.uri()),
+            method: Some(Method::Browser),
+            client_id: client_id.map(str::to_string),
+            profile: Some("acme".into()),
+            ..LoginRequest::default()
+        };
+        login(&le, request).await.unwrap();
+        seen.into_inner()
+            .unwrap()
+            .expect("the browser was not opened")
+    }
+
+    #[tokio::test]
+    async fn with_automatic_registration_browser_sign_in_needs_no_client() {
+        let server = instance(jane(), true).await;
+        oauth_endpoints_for(&server, CIMD_CLIENT_ID).await;
+        let f = fixture();
+        assert_eq!(browser_sign_in(&f, &server, None).await, CIMD_CLIENT_ID);
+        let profile = &f.store.load().unwrap().profiles["acme"];
+        assert_eq!(profile.oauth_client_id.as_deref(), Some(CIMD_CLIENT_ID));
+    }
+
+    #[tokio::test]
+    async fn a_client_saved_for_the_instance_wins_over_automatic_registration() {
+        let server = instance(jane(), true).await;
+        oauth_endpoints_for(&server, "yt-cli").await;
+        let f = fixture();
+        let saved = Profile {
+            oauth_client_id: Some("yt-cli".into()),
+            ..existing(&server.uri(), "jane")
+        };
+        f.store.set_profile("acme", &saved).unwrap();
+        assert_eq!(browser_sign_in(&f, &server, None).await, "yt-cli");
+    }
+
+    #[tokio::test]
+    async fn the_client_id_flag_wins_over_automatic_registration() {
+        let server = instance(jane(), true).await;
+        oauth_endpoints_for(&server, "from-flag").await;
+        let f = fixture();
+        assert_eq!(
+            browser_sign_in(&f, &server, Some("from-flag")).await,
+            "from-flag"
+        );
+    }
+
+    #[test]
+    fn the_client_setup_help_offers_automatic_registration() {
+        let text = client_setup(&InstanceUrl::parse("https://acme.youtrack.cloud").unwrap());
+        assert!(
+            text.contains("Allow automatic OAuth client registration via CIMD"),
+            "{text}"
+        );
+        assert!(text.contains("http://127.0.0.1:8765/callback"), "{text}");
     }
 
     fn existing(url: &str, login: &str) -> Profile {

@@ -150,7 +150,8 @@ Pull requests are squash-merged, so the PR title becomes the commit subject on `
 - Never commit credentials. Never print tokens in logs, error messages, or debug output; register every token with `yt::redact::register`.
 - Stored credential types hold tokens as plain `String`s with a `Debug` that hides them, and the redactor filters logs and error output. `SecretString` is used only on the request path.
 - Credentials live in the OS keyring (service `yt`, account `<login>@<host><context path>`, e.g. `jane@acme.youtrack.cloud`) as JSON: `{"kind":"token",…}` or `{"kind":"oauth",…}`. There is no file fallback.
-- Browser sign-in needs an OAuth client an administrator registered (Authorization Code + PKCE, no secret, redirect URI `http://127.0.0.1:<any port>/callback`). Client self-registration through an OAuth Client ID Metadata Document (CIMD) is not used yet.
+- Browser sign-in uses, in order: `--client-id`, `YT_OAUTH_CLIENT_ID`, a client saved on a profile for the instance, then, where the instance allows automatic OAuth client registration (`client_id_metadata_document_supported`), `CIMD_CLIENT_ID`. Otherwise an administrator registers a client (Authorization Code + PKCE, no secret, redirect URI `http://127.0.0.1:<any port>/callback`).
+- `CIMD_CLIENT_ID` is the URL of yt's OAuth Client ID Metadata Document, `oauth-client.json` on the `docs` branch, served by GitHub Pages. It is yt's identity on every instance: never move or rename the file. Its contents may change.
 - `yt auth login --revocable` adds Hub's scope `0-0-0-0-0` so logout and re-login can delete refresh tokens; it is opt-in because users see it as "YouTrack Administration".
 - Refresh tokens last 90 days; refreshes run under a lock file in the state directory so concurrent yt processes never spend one twice.
 - When a sign-in expires during a command, yt signs in again and re-runs the command only if the command has not yet sent a change (`Client::has_written`); otherwise it stops so changes are never applied twice.
@@ -165,3 +166,4 @@ Pull requests are squash-merged, so the PR title becomes the commit subject on `
 - `main` is the main branch.
 - Develop features on feature branches created from `main`.
 - Open pull requests against `main`; they are squash-merged.
+- `docs` holds only the GitHub Pages site (the CIMD document); change it through pull requests against `docs`, which are squash-merged too.
