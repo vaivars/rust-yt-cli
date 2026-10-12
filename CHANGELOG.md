@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0](https://github.com/vaivars/rust-yt-cli/compare/v0.0.1...v0.1.0) - 2026-10-12
+
+### Added
+
+- *(auth)* sign in without an OAuth client on instances with automatic registration ([#3](https://github.com/vaivars/rust-yt-cli/pull/3))
+
 ## [0.0.1](https://github.com/vaivars/rust-yt-cli/releases/tag/v0.0.1) - 2026-10-12
 
 ### Added
