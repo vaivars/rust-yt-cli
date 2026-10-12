@@ -39,9 +39,9 @@ The binary (`src/cli/`) has one directory per command group and one file per com
 - `clippy.toml` - Bans `std::env::var*` (read the environment through `yt::env::Env`), `std::process::exit` (return an `ExitCode`) and `eprintln!`/`eprint!` (use `yt::ui::eprint_line`)
 - `.github/workflows/ci.yml` - Runs `mise run ci`; its `final` job is a required status check
 - `.github/workflows/conventional-commits.yml` - Validates PR titles; its `title` job is a required status check
-- `release-plz.toml` - release-plz settings: a release happens when the release PR is merged; `feat` bumps the minor version below 1.0
-- `.github/workflows/release-plz.yml` - Opens the release PR and, when it is merged, tags, publishes to crates.io and creates the GitHub Release
-- `.github/workflows/release.yml` - On a `v*` tag, builds the macOS and Linux binaries and attaches archives with completion files and `SHA256SUMS` to the release
+- `release-plz.toml` - release-plz settings: a release happens when the release PR is merged; `feat` bumps the minor version below 1.0; the GitHub Release starts as a draft
+- `.github/workflows/release-plz.yml` - Opens the release PR and, when it is merged, tags, publishes to crates.io and creates the GitHub Release as a draft
+- `.github/workflows/release.yml` - On a `v*` tag, builds the macOS and Linux binaries, attaches archives with completion files and `SHA256SUMS` to the draft release, then publishes it; published releases are immutable
 
 ### Build System
 - One package with two targets: library `yt` (`src/lib.rs`, everything except the command line) and binary `yt` (`src/main.rs` and `src/cli/`). Library code never depends on `src/cli/`.

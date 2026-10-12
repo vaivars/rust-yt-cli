@@ -3,5 +3,7 @@
 release_always = false
 # `feat` bumps the minor version while below 1.0.
 features_always_increment_minor = true
+# A published release is immutable, so release.yml publishes the draft once the binaries are attached.
+git_release_draft = true
 # The library only serves the binary; it has no public API to check.
 semver_check = false
