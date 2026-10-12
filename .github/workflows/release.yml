@@ -132,6 +132,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # release-plz creates the release right after pushing the tag; wait for it to appear.
+          # release-plz creates the draft release right after pushing the tag; wait for it to appear.
           for _ in $(seq 1 30); do gh release view "$TAG" > /dev/null 2>&1 && break; sleep 10; done
           gh release upload "$TAG" dist/* --clobber
+          gh release edit "$TAG" --draft=false
