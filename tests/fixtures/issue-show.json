@@ -1,0 +1,18 @@
+{
+  "idReadable": "WEB-42",
+  "summary": "Login fails with SSO",
+  "description": "Steps:\n1. Open the login page\n2. Choose SSO",
+  "project": { "shortName": "WEB", "name": "Web Site", "$type": "Project" },
+  "reporter": { "login": "jane", "fullName": "Jane Doe", "$type": "User" },
+  "created": 1791579736619,
+  "updated": 1791590400000,
+  "resolved": null,
+  "tags": [{ "name": "sso", "$type": "Tag" }],
+  "customFields": [
+    { "name": "Priority", "$type": "SingleEnumIssueCustomField", "value": { "name": "Major", "$type": "EnumBundleElement" } },
+    { "name": "State", "$type": "StateIssueCustomField", "value": { "name": "In Progress", "isResolved": false, "$type": "StateBundleElement" } },
+    { "name": "Assignee", "$type": "SingleUserIssueCustomField", "value": { "login": "bob", "fullName": "Bob", "$type": "User" } },
+    { "name": "Fix versions", "$type": "MultiVersionIssueCustomField", "value": [] }
+  ],
+  "$type": "Issue"
+}

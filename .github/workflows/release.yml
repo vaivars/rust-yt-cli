@@ -1,0 +1,137 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag the archives are named after and uploaded to, e.g. v0.0.1"
+        required: true
+      dry_run:
+        description: "Build and package only; keep the archives as workflow artifacts"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            runs: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            runs: false
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            runs: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            runs: false
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # A run that uploads builds the tag, never the branch it was started from.
+          ref: ${{ !inputs.dry_run && inputs.tag || github.ref }}
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: 2026.10.6
+          install_args: rust
+      - name: Add the Rust target
+        if: runner.os == 'macOS'
+        run: rustup target add "$TARGET"
+      - uses: taiki-e/setup-cross-toolchain-action@12b7ad4acfa95a1476779d6c06699b96ec1691f8 # v1.42.0
+        if: runner.os == 'Linux'
+        with:
+          target: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target "$TARGET"
+      - name: Check that the tag matches the version
+        if: ${{ !inputs.dry_run && !contains(env.TAG, '-') }}
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          test "$TAG" = "v$version" || { echo "::error::tag $TAG does not match version $version"; exit 1; }
+      - name: Smoke test
+        if: matrix.runs
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          "target/$TARGET/release/yt" --version | grep -Fx "yt $version"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: yt-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/yt
+          if-no-files-found: error
+
+  package:
+    name: package
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # A run that uploads builds the tag, never the branch it was started from.
+          ref: ${{ !inputs.dry_run && inputs.tag || github.ref }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: yt-*
+          path: binaries
+      - name: Package
+        run: |
+          set -euo pipefail
+          chmod +x binaries/*/yt
+          host=binaries/yt-x86_64-unknown-linux-musl/yt
+          mkdir -p completions dist staging
+          "$host" completion bash > completions/yt.bash
+          "$host" completion zsh > completions/_yt
+          "$host" completion fish > completions/yt.fish
+          for dir in binaries/yt-*; do
+            target=${dir#binaries/yt-}
+            name="yt-$TAG-$target"
+            mkdir -p "staging/$name/completions"
+            cp "$dir/yt" LICENSE README.md "staging/$name/"
+            cp completions/* "staging/$name/completions/"
+            tar -C staging -czf "dist/$name.tar.gz" "$name"
+          done
+          (cd dist && sha256sum -- *.tar.gz > SHA256SUMS)
+          ls -l dist
+      - name: Keep the archives
+        if: inputs.dry_run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+      - name: Upload to the release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # release-plz creates the release right after pushing the tag; wait for it to appear.
+          for _ in $(seq 1 30); do gh release view "$TAG" > /dev/null 2>&1 && break; sleep 10; done
+          gh release upload "$TAG" dist/* --clobber

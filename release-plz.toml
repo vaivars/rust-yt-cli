@@ -1,0 +1,7 @@
+[workspace]
+# Release when the release PR is merged, not on every push.
+release_always = false
+# `feat` bumps the minor version while below 1.0.
+features_always_increment_minor = true
+# The library only serves the binary; it has no public API to check.
+semver_check = false

@@ -1,0 +1,23 @@
+---
+source: tests/issue.rs
+expression: value
+---
+{
+  "created": "2026-10-09T21:02:16Z",
+  "description": "Steps:\n1. Open the login page\n2. Choose SSO",
+  "fields": {
+    "Assignee": "bob",
+    "Fix versions": null,
+    "Priority": "Major",
+    "State": "In Progress"
+  },
+  "id": "WEB-42",
+  "project": "WEB",
+  "reporter": "jane",
+  "resolved": null,
+  "summary": "Login fails with SSO",
+  "tags": [
+    "sso"
+  ],
+  "updated": "2026-10-10T00:00:00Z"
+}

@@ -1,0 +1,108 @@
+name: release-plz
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+permissions: {}
+
+jobs:
+  gate:
+    name: gate
+    # Only the release branch may release or rebuild the release PR.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    outputs:
+      release: ${{ steps.secrets.outputs.release }}
+      cargo_token: ${{ steps.secrets.outputs.cargo_token }}
+    steps:
+      - id: secrets
+        env:
+          APP_ID: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -n "$APP_ID" ] && [ -n "$APP_PRIVATE_KEY" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::RELEASE_PLZ_APP_ID and RELEASE_PLZ_APP_PRIVATE_KEY are not set, so release-plz is skipped"
+          fi
+          if [ -n "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "cargo_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # No concurrency group: a queued release must never be replaced by a newer push.
+  release:
+    name: release
+    needs: [gate]
+    if: needs.gate.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: 2026.10.6
+          install_args: rust release-plz
+      # Changes made with GITHUB_TOKEN start no workflows; the app's token starts CI and release.yml.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Release with the crates.io token
+        if: needs.gate.outputs.cargo_token == 'true'
+        env:
+          GIT_TOKEN: ${{ steps.app-token.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: release-plz release
+      # Without the token, release-plz publishes through crates.io trusted publishing.
+      - name: Release with trusted publishing
+        if: needs.gate.outputs.cargo_token != 'true'
+        env:
+          GIT_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: release-plz release
+
+  release-pr:
+    name: release-pr
+    needs: [gate]
+    if: needs.gate.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    concurrency:
+      group: release-plz-pr
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          version: 2026.10.6
+          install_args: rust release-plz
+      # Changes made with GITHUB_TOKEN start no workflows; the app's token starts CI and release.yml.
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          client-id: ${{ secrets.RELEASE_PLZ_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLZ_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Release PR
+        env:
+          GIT_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: release-plz release-pr

@@ -1,0 +1,83 @@
+[package]
+name = "yt-cli"
+description = "Command line interface for JetBrains YouTrack"
+license = "MIT"
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.99"
+repository = "https://github.com/vaivars/rust-yt-cli"
+documentation = "https://github.com/vaivars/rust-yt-cli#readme"
+keywords = ["youtrack", "cli", "jetbrains", "issue-tracker"]
+categories = ["command-line-utilities"]
+# Anchored, so README.md files in subdirectories, even gitignored ones, are never packaged.
+include = ["/src/**/*.rs", "/README.md", "/LICENSE"]
+
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/yt-v{ version }-{ target }.tar.gz"
+bin-dir = "yt-v{ version }-{ target }/{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/yt-v{ version }-x86_64-unknown-linux-musl.tar.gz"
+bin-dir = "yt-v{ version }-x86_64-unknown-linux-musl/{ bin }{ binary-ext }"
+
+[package.metadata.binstall.overrides.aarch64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/yt-v{ version }-aarch64-unknown-linux-musl.tar.gz"
+bin-dir = "yt-v{ version }-aarch64-unknown-linux-musl/{ bin }{ binary-ext }"
+
+[lib]
+name = "yt"
+path = "src/lib.rs"
+doc = false
+
+[[bin]]
+name = "yt"
+path = "src/main.rs"
+
+[dependencies]
+base64 = "0.23"
+chrono = { version = "0.4", features = ["serde"] }
+comfy-table = "8"
+console = "0.16"
+demand = "2"
+futures = "0.3"
+keyring-core = "1"
+log = { version = "0.4", features = ["std"] }
+miette = { version = "7", features = ["fancy"] }
+rand = "0.10"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "http2", "charset", "system-proxy", "json", "query", "form", "gzip", "multipart"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+secrecy = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_path_to_error = "0.1"
+sha2 = "0.11"
+strsim = "0.11"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "time", "sync", "io-util"] }
+toml = "1"
+toml_edit = "0.25"
+url = { version = "2", features = ["serde"] }
+usage-config = { version = "7", features = ["toml"] }
+usage-rs = { version = "7", features = ["completions", "config"] }
+webbrowser = "1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+apple-native-keyring-store = { version = "1", features = ["keychain"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus-secret-service-keyring-store = { version = "1", features = ["crypto-rust"] }
+
+[dev-dependencies]
+insta = { version = "1", features = ["json", "redactions", "filters"] }
+tempfile = "3"
+usage-rs = { version = "7", features = ["test", "completions", "config"] }
+wiremock = "0.6"
+
+[profile.dev]
+debug = 1
+
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1

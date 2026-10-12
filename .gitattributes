@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+# mise verifies lockfiles byte-for-byte; CRLF conversion breaks `mise install --locked`.
+mise.lock -text
+.mise/locks/** -text

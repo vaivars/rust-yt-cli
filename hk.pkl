@@ -1,0 +1,47 @@
+amends "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.5.0/hk@2.5.0#/Builtins.pkl"
+
+local generated = List("Cargo.lock", "mise.lock")
+
+local linters = new Mapping<String, Step> {
+  ["cargo-fmt"] = Builtins.cargo_fmt
+  ["cargo-clippy"] = (Builtins.cargo_clippy) {
+    check = new CommandSpec {
+      command = "cargo clippy --manifest-path {{workspace_indicator}} --quiet --all-targets -- -D warnings"
+      effect = "write"
+    }
+  }
+  ["pkl"] = Builtins.pkl
+  ["jactionlint"] {
+    glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
+    batch = true
+    check = new CommandSpec {
+      command = "jactionlint {{ files }}"
+      effect = "read"
+    }
+  }
+  ["newlines"] = (Builtins.newlines) {
+    exclude = generated
+  }
+  // trailing double spaces are markdown line breaks
+  ["trailing-whitespace"] = (Builtins.trailing_whitespace) {
+    exclude = generated + List("**/*.md")
+  }
+}
+
+fail_fast = false
+
+hooks {
+  ["pre-commit"] {
+    fix = true
+    stash = "git"
+    steps = linters
+  }
+  ["fix"] {
+    fix = true
+    steps = linters
+  }
+  ["check"] {
+    steps = linters
+  }
+}

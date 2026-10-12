@@ -1,0 +1,23 @@
+[
+  {
+    "idReadable": "WEB-1",
+    "summary": "Login fails",
+    "project": { "shortName": "WEB", "name": "Web Site" },
+    "created": 1791579736619,
+    "updated": 1791590400000,
+    "resolved": null,
+    "customFields": [
+      { "name": "State", "$type": "StateIssueCustomField", "value": { "name": "Open", "isResolved": false } },
+      { "name": "Priority", "$type": "SingleEnumIssueCustomField", "value": { "name": "Major" } }
+    ]
+  },
+  {
+    "idReadable": "WEB-2",
+    "summary": "Typo on the pricing page",
+    "project": { "shortName": "WEB", "name": "Web Site" },
+    "created": 1791579736619,
+    "updated": 1791579736619,
+    "resolved": null,
+    "customFields": []
+  }
+]
