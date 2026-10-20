@@ -1,6 +1,11 @@
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "warn"
+ignore = [
+  { id = "RUSTSEC-2026-0370", reason = "zvariant: needed by zbus 5, which secret-service (Linux keyring) still requires" },
+  { id = "RUSTSEC-2026-0371", reason = "zbus_names: needed by zbus 5, which secret-service (Linux keyring) still requires" },
+  { id = "RUSTSEC-2026-0372", reason = "zvariant_derive: needed by zbus 5, which secret-service (Linux keyring) still requires" },
+]
 
 [sources]
 allow-registry   = ["https://github.com/rust-lang/crates.io-index"]
