@@ -43,6 +43,15 @@ pub fn user_agent() -> String {
     )
 }
 
+/// A failed request as the user reads it; why a redirect was stopped is only in the error's source.
+pub fn describe(error: &reqwest::Error) -> String {
+    let message = match std::error::Error::source(error) {
+        Some(reason) if error.is_redirect() => format!("{error}: {reason}"),
+        _ => error.to_string(),
+    };
+    crate::redact::redact(&message)
+}
+
 pub fn is_transient(status: StatusCode) -> bool {
     matches!(status.as_u16(), 408 | 429 | 500..=599)
 }
@@ -69,7 +78,8 @@ fn builder(config: &HttpConfig) -> Result<reqwest::ClientBuilder> {
     let mut builder = reqwest::Client::builder()
         .user_agent(user_agent())
         .connect_timeout(Duration::from_secs(10))
-        .gzip(true);
+        .gzip(true)
+        .redirect(redirect_policy());
     if !config.timeout.is_zero() {
         builder = builder.timeout(config.timeout);
     }
@@ -84,6 +94,27 @@ fn builder(config: &HttpConfig) -> Result<reqwest::ClientBuilder> {
         builder = builder.tls_certs_merge(certificates);
     }
     Ok(builder)
+}
+
+/// reqwest keeps `Authorization` on a redirect to the same host and port, even from https to http.
+fn redirect_policy() -> reqwest::redirect::Policy {
+    reqwest::redirect::Policy::custom(|attempt| {
+        let previous = attempt.previous();
+        if previous
+            .last()
+            .is_some_and(|from| downgrades(from, attempt.url()))
+        {
+            attempt.error("refused a redirect from https to http")
+        } else if previous.len() > 10 {
+            attempt.error("too many redirects")
+        } else {
+            attempt.follow()
+        }
+    })
+}
+
+fn downgrades(from: &reqwest::Url, to: &reqwest::Url) -> bool {
+    from.scheme() == "https" && to.scheme() == "http"
 }
 
 fn build(builder: reqwest::ClientBuilder) -> Result<reqwest::Client> {
@@ -147,6 +178,22 @@ mod tests {
             HeaderValue::from_static("Wed, 21 Oct 2026 07:28:00 GMT"),
         );
         assert_eq!(retry_delay(1, Some(&headers)), Duration::from_secs(1));
+    }
+
+    #[test]
+    fn only_a_redirect_from_https_to_http_is_a_downgrade() {
+        let url = |text: &str| reqwest::Url::parse(text).unwrap();
+        assert!(downgrades(
+            &url("https://acme.example/api/x"),
+            &url("http://acme.example/api/x")
+        ));
+        for (from, to) in [
+            ("https://acme.example/a", "https://acme.example/b"),
+            ("http://acme.example/a", "http://acme.example/b"),
+            ("http://acme.example/a", "https://acme.example/a"),
+        ] {
+            assert!(!downgrades(&url(from), &url(to)), "{from} -> {to}");
+        }
     }
 
     #[test]

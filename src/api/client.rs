@@ -472,7 +472,7 @@ fn export_limit(body: &str) -> Option<usize> {
 }
 
 fn network(error: reqwest::Error) -> miette::Report {
-    YtError::Network(crate::redact::redact(&error.to_string())).into()
+    YtError::Network(crate::http::describe(&error)).into()
 }
 
 #[cfg(test)]
@@ -558,6 +558,21 @@ mod tests {
                 id_readable: "WEB-1".into()
             }
         );
+    }
+
+    #[tokio::test]
+    async fn a_stopped_redirect_says_why() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(|request: &wiremock::Request| {
+                ResponseTemplate::new(302)
+                    .insert_header("location", format!("{}/next", request.url.path()))
+            })
+            .mount(&server)
+            .await;
+        let result: Result<Item> = client_for(&server, fixed()).get("issues/WEB-1", &[]).await;
+        let error = result.unwrap_err().to_string();
+        assert!(error.contains("too many redirects"), "{error}");
     }
 
     #[tokio::test]

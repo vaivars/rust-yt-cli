@@ -422,7 +422,7 @@ fn bearer(token: &SecretString) -> HeaderValue {
 }
 
 fn network(error: reqwest::Error) -> miette::Report {
-    YtError::Network(crate::redact::redact(&error.to_string())).into()
+    YtError::Network(crate::http::describe(&error)).into()
 }
 
 #[cfg(test)]

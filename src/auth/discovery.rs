@@ -72,7 +72,7 @@ pub async fn discover(http: &reqwest::Client, url: &InstanceUrl) -> Result<Disco
         .header(ACCEPT, "application/json")
         .send()
         .await
-        .map_err(|error| fail(crate::redact::redact(&error.to_string())))?;
+        .map_err(|error| fail(crate::http::describe(&error)))?;
     if !response.status().is_success() {
         return Err(fail(format!(
             "/api/config answered HTTP {}",
@@ -102,6 +102,16 @@ pub async fn discover(http: &reqwest::Client, url: &InstanceUrl) -> Result<Disco
                 false,
             ),
         };
+    if let Some(reason) = insecure_endpoint(
+        url,
+        &[
+            ("Hub", &hub),
+            ("authorization endpoint", &authorization_endpoint),
+            ("token endpoint", &token_endpoint),
+        ],
+    ) {
+        return Err(fail(reason));
+    }
     Ok(Discovery {
         url: url.clone(),
         version: config.version.unwrap_or_default(),
@@ -112,6 +122,19 @@ pub async fn discover(http: &reqwest::Client, url: &InstanceUrl) -> Result<Disco
         token_endpoint,
         cimd_supported,
     })
+}
+
+/// Sign-in codes and tokens must not leave an `https` instance over plain `http`.
+fn insecure_endpoint(url: &InstanceUrl, endpoints: &[(&str, &Url)]) -> Option<String> {
+    if url.origin().scheme() != "https" {
+        return None;
+    }
+    endpoints
+        .iter()
+        .find(|(_, endpoint)| endpoint.scheme() != "https")
+        .map(|(name, endpoint)| {
+            format!("the instance uses https, but its {name} {endpoint} does not")
+        })
 }
 
 /// `ring.url` is absolute for an external Hub and an origin-relative path (`/hub`) for a built-in one.
@@ -213,6 +236,30 @@ mod tests {
         );
         assert!(!discovery.cimd_supported);
         assert_eq!(discovery.token_page().path(), "/external-hub/users/me");
+    }
+
+    #[test]
+    fn an_https_instance_refuses_http_hub_endpoints() {
+        let url = InstanceUrl::parse("https://acme.example").unwrap();
+        let secure = Url::parse("https://hub.example/hub/").unwrap();
+        let plain = Url::parse("http://acme.example/hub/api/rest/oauth2/token").unwrap();
+        assert_eq!(
+            insecure_endpoint(&url, &[("Hub", &secure), ("token endpoint", &secure)]),
+            None
+        );
+        assert_eq!(
+            insecure_endpoint(&url, &[("Hub", &secure), ("token endpoint", &plain)]).as_deref(),
+            Some(
+                "the instance uses https, but its token endpoint http://acme.example/hub/api/rest/oauth2/token does not"
+            )
+        );
+    }
+
+    #[test]
+    fn an_http_instance_may_use_http_hub_endpoints() {
+        let url = InstanceUrl::parse("http://youtrack.lan").unwrap();
+        let plain = Url::parse("http://youtrack.lan/hub/").unwrap();
+        assert_eq!(insecure_endpoint(&url, &[("Hub", &plain)]), None);
     }
 
     #[tokio::test]
