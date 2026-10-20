@@ -45,6 +45,17 @@ impl InstanceUrl {
         self.base.host_str().unwrap_or_default()
     }
 
+    /// Plain `http` to another machine: credentials and data cross the network in clear text.
+    pub fn is_unencrypted(&self) -> bool {
+        let loopback = match self.base.host() {
+            Some(url::Host::Domain(domain)) => domain == "localhost",
+            Some(url::Host::Ipv4(address)) => address.is_loopback(),
+            Some(url::Host::Ipv6(address)) => address.is_loopback(),
+            None => false,
+        };
+        self.base.scheme() == "http" && !loopback
+    }
+
     /// The keyring account for `login` on this instance, e.g. `jane@acme.youtrack.cloud`.
     pub fn account(&self, login: &str) -> String {
         let address = self.to_string();
@@ -239,6 +250,29 @@ mod tests {
     #[test]
     fn rejects_other_schemes() {
         assert!(InstanceUrl::parse("ftp://acme.youtrack.cloud").is_err());
+    }
+
+    #[test]
+    fn plain_http_is_unencrypted_except_on_this_machine() {
+        for input in ["http://youtrack.lan", "http://10.0.0.5:8080/youtrack"] {
+            assert!(
+                InstanceUrl::parse(input).unwrap().is_unencrypted(),
+                "{input}"
+            );
+        }
+        for input in [
+            "acme.youtrack.cloud",
+            "https://youtrack.lan",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080",
+            "http://127.1.2.3",
+            "http://[::1]:8080",
+        ] {
+            assert!(
+                !InstanceUrl::parse(input).unwrap().is_unencrypted(),
+                "{input}"
+            );
+        }
     }
 
     #[test]

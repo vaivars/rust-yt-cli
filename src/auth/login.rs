@@ -92,6 +92,12 @@ pub async fn login(le: &LoginEnv<'_>, request: LoginRequest) -> Result<LoginOutc
     }
     let http = crate::http::client(le.http)?;
     let discovery = discover_with_prompt(le, &http, url).await?;
+    if discovery.url.is_unencrypted() {
+        log::warn!(
+            "{} uses plain http: the sign-in and everything yt sends cross the network unencrypted",
+            discovery.url
+        );
+    }
     check_requested(&config, profile.as_deref(), &discovery.url, None)?;
     let mut client_id = client_id
         .or_else(|| client_id_for(&config, &discovery.url))

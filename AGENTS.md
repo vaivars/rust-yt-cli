@@ -153,6 +153,7 @@ Pull requests are squash-merged, so the PR title becomes the commit subject on `
 - Browser sign-in uses, in order: `--client-id`, `YT_OAUTH_CLIENT_ID`, a client saved on a profile for the instance, then, where the instance allows automatic OAuth client registration (`client_id_metadata_document_supported`), `CIMD_CLIENT_ID`. Otherwise an administrator registers a client (Authorization Code + PKCE, no secret, redirect URI `http://127.0.0.1:<any port>/callback`).
 - `CIMD_CLIENT_ID` is the URL of yt's OAuth Client ID Metadata Document, `oauth-client.json` on the `docs` branch, served by GitHub Pages. It is yt's identity on every instance: never move or rename the file. Its contents may change.
 - `yt auth login --revocable` adds Hub's scope `0-0-0-0-0` so logout and re-login can delete refresh tokens; it is opt-in because users see it as "YouTrack Administration".
+- Credentials never leave https for http: every client refuses a redirect from https to http, and discovery refuses http Hub, authorization and token endpoints for an https instance. Signing in to a plain-http instance on another machine warns.
 - Refresh tokens last 90 days; refreshes run under a lock file in the state directory so concurrent yt processes never spend one twice.
 - When a sign-in expires during a command, yt signs in again and re-runs the command only if the command has not yet sent a change (`Client::has_written`); otherwise it stops so changes are never applied twice.
 
