@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/vaivars/rust-yt-cli/compare/v0.1.0...v0.1.1) - 2026-10-20
+
+### Security
+
+- guard credentials against plain http ([#7](https://github.com/vaivars/rust-yt-cli/pull/7))
+
 ## [0.1.0](https://github.com/vaivars/rust-yt-cli/compare/v0.0.1...v0.1.0) - 2026-10-12
 
 ### Added
