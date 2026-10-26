@@ -18,7 +18,7 @@ pub(crate) async fn answer(request: &CompletionRequest) -> String {
     let position = complete::walk(Yt::spec().root.cmd, split.argv());
     let answer = match position.external {
         // `external` counts from the first word after the program name.
-        Some(index) => app_commands(split, index + 1),
+        Some(index) => app_commands(split, index + 1).await,
         None => {
             let mut answer = crate::cli::completion::app()
                 .complete_request(request)
@@ -50,7 +50,7 @@ pub(crate) async fn answer(request: &CompletionRequest) -> String {
 }
 
 /// Completes the words after `yt app <APP>` against the app's own command line.
-fn app_commands(split: &Split, app_word: usize) -> Completions<'static> {
+async fn app_commands(split: &Split, app_word: usize) -> Completions<'static> {
     let none = Completions {
         candidates: Vec::new(),
         files: None,
@@ -76,7 +76,10 @@ fn app_commands(split: &Split, app_word: usize) -> Completions<'static> {
         cword: split.cword.saturating_sub(app_word),
         prefix: split.prefix.clone(),
     };
-    complete::complete(tree::build(&api).spec, &sub)
+    complete::App::new(tree::build(&api).spec.view())
+        .completions(&crate::cli::completion::COMPLETIONS)
+        .complete_request(&CompletionRequest::for_split(sub))
+        .await
 }
 
 /// The apps the profile on this line uses, each with the profile's description cache.
@@ -91,7 +94,8 @@ fn enabled(split: &Split) -> Vec<(&'static AppEntry, AppCache)> {
     let repo = std::env::current_dir()
         .ok()
         .and_then(|cwd| yt::config::repo::find(&cwd).ok().flatten());
-    let flag = profile_flag(&split.words).or_else(|| env.get("YT_PROFILE").map(str::to_string));
+    let typed = split.words.get(..split.cword).unwrap_or_default();
+    let flag = profile_flag(typed).or_else(|| env.get("YT_PROFILE").map(str::to_string));
     let Ok(choice) = yt::config::profile::resolve(flag.as_deref(), &env, repo.as_ref(), &config)
     else {
         return Vec::new();

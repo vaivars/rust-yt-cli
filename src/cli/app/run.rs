@@ -22,9 +22,17 @@ pub(crate) async fn run(ctx: &Ctx, words: Vec<OsString>) -> yt::Result<()> {
     let client = ctx.client().await?;
     let cache = ctx.app_cache()?;
     let taken = global_longs();
-    let api = yt::apps::load(client, &cache, app, false, &taken).await?;
-    let Some((operation, request)) = prepare(ctx, client, &api, rest).await? else {
-        return Ok(());
+    let loaded = yt::apps::load(client, &cache, app, false, &taken).await?;
+    let mut prepared = prepare(ctx, client, &loaded.api, rest).await?;
+    // The app may have gained the command since its description was cached; nothing was sent yet.
+    if matches!(prepared, Prepared::UnknownCommand(_)) && !loaded.fetched {
+        let fresh = yt::apps::load(client, &cache, app, true, &taken).await?;
+        prepared = prepare(ctx, client, &fresh.api, rest).await?;
+    }
+    let (operation, request) = match prepared {
+        Prepared::Request(operation, request) => (operation, request),
+        Prepared::Help => return Ok(()),
+        Prepared::UnknownCommand(error) => return Err(error),
     };
     let error = match send(ctx, client, &request).await {
         Ok(()) => return Ok(()),
@@ -36,10 +44,16 @@ pub(crate) async fn run(ctx: &Ctx, words: Vec<OsString>) -> yt::Result<()> {
     let fresh = yt::apps::load(client, &cache, app, true, &taken).await?;
     // A read can go to whichever endpoint is still on; a write is never sent twice.
     if request.method == Method::GET
-        && let Ok(Some((retry, again))) = prepare(ctx, client, &fresh, rest).await
+        && let Ok(Prepared::Request(retry, again)) = prepare(ctx, client, &fresh.api, rest).await
         && retry.path != operation.path
     {
-        return send(ctx, client, &again).await;
+        return match send(ctx, client, &again).await {
+            Err(error) => match yt::apps::stale(&error) {
+                Some(stale) => Err(explain(error, stale, &retry, app)),
+                None => Err(error),
+            },
+            sent => sent,
+        };
     }
     Err(explain(error, stale, &operation, app))
 }
@@ -59,18 +73,26 @@ fn enabled(ctx: &Ctx, name: &str) -> yt::Result<&'static AppEntry> {
     }
 }
 
-/// The request the words ask for, or `None` once help has been printed.
+enum Prepared {
+    Request(Box<Operation>, Request),
+    /// Help was printed.
+    Help,
+    UnknownCommand(miette::Report),
+}
+
+/// The request the words ask for.
 async fn prepare(
     ctx: &Ctx,
     client: &Client,
     api: &AppApi,
     words: &[OsString],
-) -> yt::Result<Option<(Operation, Request)>> {
+) -> yt::Result<Prepared> {
     let call = match tree::parse(api, words)? {
         Parsed::Help(page) => {
-            ctx.output.write(page.trim_end())?;
-            return Ok(None);
+            ctx.output.styled(page.trim_end())?;
+            return Ok(Prepared::Help);
         }
+        Parsed::UnknownCommand(error) => return Ok(Prepared::UnknownCommand(error)),
         Parsed::Call(call) => call,
     };
     let operation = api.operations[call.operation].clone();
@@ -79,7 +101,7 @@ async fn prepare(
         inputs.input = Some(crate::cli::api::read_body(source).await?);
     }
     let request = request::build(&operation, &inputs, client.instance())?;
-    Ok(Some((operation, request)))
+    Ok(Prepared::Request(Box::new(operation), request))
 }
 
 async fn send(ctx: &Ctx, client: &Client, request: &Request) -> yt::Result<()> {

@@ -66,6 +66,13 @@ pub async fn fetch_document(client: &Client, app: &AppEntry) -> Result<String> {
     }
 }
 
+#[derive(Debug)]
+pub struct Loaded {
+    pub api: AppApi,
+    /// Whether the description was fetched now rather than read from the cache.
+    pub fetched: bool,
+}
+
 /// The app's commands: from the cache while it is fresh, unless `refresh`, otherwise fetched and cached.
 pub async fn load(
     client: &Client,
@@ -73,10 +80,15 @@ pub async fn load(
     app: &AppEntry,
     refresh: bool,
     taken: &[&str],
-) -> Result<AppApi> {
+) -> Result<Loaded> {
     if !refresh && let Some(text) = cache.load(app.id) {
         match AppApi::parse(app.id, &text, taken) {
-            Ok(api) => return Ok(api),
+            Ok(api) => {
+                return Ok(Loaded {
+                    api,
+                    fetched: false,
+                });
+            }
             Err(error) => log::debug!("ignoring the cached description of {}: {error}", app.id),
         }
     }
@@ -94,7 +106,7 @@ pub async fn load(
     };
     let api = AppApi::parse(app.id, &text, taken)?;
     cache.store(app.id, &text);
-    Ok(api)
+    Ok(Loaded { api, fetched: true })
 }
 
 #[cfg(test)]
@@ -133,8 +145,9 @@ mod tests {
         let client = test_client(&server.uri());
         let first = load(&client, &cache, app(), false, &[]).await.unwrap();
         let second = load(&client, &cache, app(), false, &[]).await.unwrap();
-        assert_eq!(first, second);
-        assert_eq!(first.operations.len(), 2);
+        assert!(first.fetched && !second.fetched);
+        assert_eq!(first.api, second.api);
+        assert_eq!(first.api.operations.len(), 2);
     }
 
     #[tokio::test]

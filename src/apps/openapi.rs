@@ -360,6 +360,20 @@ impl<'a> Reader<'a> {
         if path_param.is_some() && !path_param_declared {
             return Err("its path has an undeclared parameter".into());
         }
+        // Two issues (or projects, …) are told apart by their parameter names.
+        let entity_names: Vec<String> = positionals.iter().map(|p| p.name.clone()).collect();
+        for positional in &mut positionals {
+            if positional.entity.is_some()
+                && entity_names
+                    .iter()
+                    .filter(|name| **name == positional.name)
+                    .count()
+                    > 1
+            {
+                positional.name =
+                    arg_name(&positional.param, None).ok_or("an argument has no usable name")?;
+            }
+        }
         let mut names: Vec<&str> = positionals.iter().map(|p| p.name.as_str()).collect();
         names.sort_unstable();
         if names.windows(2).any(|pair| pair[0] == pair[1]) {
@@ -426,7 +440,11 @@ impl<'a> Reader<'a> {
             .collect();
         let mut fields: Vec<BodyField> = Vec::new();
         for (name, property) in schema["properties"].as_object().into_iter().flatten() {
+            let required = required_fields.contains(&name.as_str());
             let Some(flag) = self.flag_name(name, flags, &fields) else {
+                if required {
+                    return Err(format!("body field {name} has no usable flag name"));
+                }
                 log::debug!(
                     "{}: skipped body field {name}: no usable flag name",
                     self.id
@@ -437,8 +455,8 @@ impl<'a> Reader<'a> {
             fields.push(BodyField {
                 flag,
                 name: name.clone(),
-                text: property["type"].as_str() == Some("string"),
-                required: required_fields.contains(&name.as_str()),
+                text: types(property) == ["string"],
+                required,
                 description: property["description"].as_str().and_then(text_block),
             });
         }
@@ -464,16 +482,7 @@ enum Kind {
 
 /// None for arrays and objects, which a single flag value cannot carry.
 fn kind(schema: &Value) -> Option<Kind> {
-    let types: Vec<&str> = match &schema["type"] {
-        Value::String(single) => vec![single.as_str()],
-        Value::Array(several) => several
-            .iter()
-            .filter_map(Value::as_str)
-            .filter(|kind| *kind != "null")
-            .collect(),
-        _ => Vec::new(),
-    };
-    match types.as_slice() {
+    match types(schema).as_slice() {
         [] => Some(Kind::Value),
         ["boolean"] => Some(Kind::Boolean),
         kinds
@@ -487,13 +496,28 @@ fn kind(schema: &Value) -> Option<Kind> {
     }
 }
 
+/// The schema's types without `null`: OpenAPI 3.1 writes a nullable string as `["string", "null"]`.
+fn types(schema: &Value) -> Vec<&str> {
+    match &schema["type"] {
+        Value::String(single) => vec![single.as_str()],
+        Value::Array(several) => several
+            .iter()
+            .filter_map(Value::as_str)
+            .filter(|kind| *kind != "null")
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// A choice with a newline or tab would split into several lines of completion output.
 fn choices(schema: &Value) -> Vec<String> {
     schema["enum"]
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(Value::as_str)
-        .map(|choice| crate::output::printable(choice).into_owned())
+        .filter(|choice| !choice.chars().any(char::is_control))
+        .map(str::to_string)
         .collect()
 }
 
@@ -865,6 +889,80 @@ mod tests {
         );
         let full = get.flags.iter().find(|f| f.flag == "full").unwrap();
         assert!(full.switch);
+    }
+
+    fn post_with_body(schema: Value) -> Value {
+        document(json!({GLOBAL: {"post": {
+            "operationId": "add-note",
+            "requestBody": {"required": true, "content": {"application/json": {"schema": schema}}},
+            "responses": {}
+        }}}))
+    }
+
+    #[test]
+    fn a_required_body_field_without_a_flag_skips_the_operation() {
+        let properties = json!({"text": {"type": "string"}, "format": {"type": "string"}});
+        let required = post_with_body(
+            json!({"type": "object", "required": ["text", "format"], "properties": properties}),
+        );
+        assert!(parse(&required).operations.is_empty());
+        let optional = post_with_body(
+            json!({"type": "object", "required": ["text"], "properties": properties}),
+        );
+        let api = parse(&optional);
+        let fields: Vec<&str> = api.operations[0]
+            .body
+            .as_ref()
+            .unwrap()
+            .fields
+            .iter()
+            .map(|f| f.name.as_str())
+            .collect();
+        assert_eq!(fields, ["text"]);
+    }
+
+    #[test]
+    fn a_nullable_string_body_field_is_text() {
+        let api = parse(&post_with_body(json!({"type": "object", "properties": {
+            "note": {"type": ["string", "null"]},
+            "count": {"type": ["integer", "null"]}
+        }})));
+        let fields: Vec<(&str, bool)> = api.operations[0]
+            .body
+            .as_ref()
+            .unwrap()
+            .fields
+            .iter()
+            .map(|f| (f.name.as_str(), f.text))
+            .collect();
+        assert_eq!(fields, [("count", false), ("note", true)]);
+    }
+
+    #[test]
+    fn two_entities_of_one_kind_are_named_after_their_parameters() {
+        let issue = |name: &str| json!({"name": name, "in": "query", "required": true, "schema": {"type": "string"}, "x-youtrack-entity": "issue"});
+        let link = json!({"post": {"operationId": "link", "parameters": [issue("sourceId"), issue("targetId")], "responses": {}}});
+        let api = parse(&document(json!({GLOBAL: link})));
+        let names: Vec<(&str, Option<Entity>)> = api.operations[0]
+            .positionals
+            .iter()
+            .map(|p| (p.name.as_str(), p.entity))
+            .collect();
+        assert_eq!(
+            names,
+            [
+                ("SOURCE_ID", Some(Entity::Issue)),
+                ("TARGET_ID", Some(Entity::Issue))
+            ]
+        );
+    }
+
+    #[test]
+    fn choices_with_control_characters_are_dropped() {
+        let mode = json!({"name": "mode", "in": "query", "schema": {"type": "string", "enum": ["compact", "full\n$(touch /tmp/x)", "a\tb", "Major"]}});
+        let get = json!({"get": {"operationId": "get-it", "parameters": [mode], "responses": {}}});
+        let api = parse(&document(json!({GLOBAL: get})));
+        assert_eq!(api.operations[0].flags[0].choices, ["compact", "Major"]);
     }
 
     #[test]

@@ -149,10 +149,11 @@ Pull requests are squash-merged, so the PR title becomes the commit subject on `
 ### YouTrack apps
 - `src/apps/registry.rs` is the allowlist: `yt app add` accepts only its ids. `list`, `ls`, `add`, `remove` and `help` are `yt app`'s own words, never app ids.
 - yt calls only the app's own extension endpoints on the profile's instance: `/api/extensionEndpoints/<id>/…`, or `/api/{issues,admin/projects,articles,users}/{param}/extensionEndpoints/<id>/…` with a declared path parameter. Any other path in a document is skipped, and a path value is encoded as one segment.
-- A document may list any subset of an app's operations, because an administrator can switch endpoints off. Whatever yt does not understand is skipped, never an error; only a document of another app, or one older than OpenAPI 3.1, is refused.
+- A document may list any subset of an app's operations, because an administrator can switch endpoints off. Whatever yt does not understand is skipped, never an error; only a document of another app, or one older than OpenAPI 3.1, is refused. An operation whose required parameter or body field cannot become an argument or flag is skipped as a whole.
 - Operations that share `x-youtrack-command` are one command; yt uses the `global` one when it is listed.
-- `403` with error `disabled`, or YouTrack's `404` "HTTP handler not found", makes yt fetch the document again. A GET is sent once more if the command now uses another endpoint; a POST is never sent twice.
-- While no app is enabled, yt sends no app requests and `yt <unknown word>` keeps usage-rs's error; `tests/app.rs` checks both.
+- `403` with error `disabled`, or YouTrack's `404` "HTTP handler not found", makes yt fetch the document again. A GET is sent once more if the command now uses another endpoint; a POST is never sent twice. A command word missing from a cached document also fetches it once more, before anything is sent.
+- App help and errors are rendered by usage-rs, coloured only when yt's own colour decision allows; server text in them was made printable when the document was read.
+- Apps live only under `yt app`: `yt <unknown word>` keeps usage-rs's error, and while no app is enabled yt sends no app requests; `tests/app.rs` checks both.
 
 ### Credentials and sign-in
 - Never commit credentials. Never print tokens in logs, error messages, or debug output; register every token with `yt::redact::register`.
@@ -167,7 +168,7 @@ Pull requests are squash-merged, so the PR title becomes the commit subject on `
 
 ### Untrusted input
 - Server text (summaries, comments, names, error descriptions) reaches the terminal only through `Output`, `yt::ui::eprint_line`, `Ui` prompts or the error report, which replace control characters with `yt::output::printable`; JSON output escapes them instead.
-- An app's OpenAPI document is server text too: `yt::apps::openapi` makes its summaries, descriptions and choices printable before they reach help or completion.
+- An app's OpenAPI document is server text too: `yt::apps::openapi` makes its summaries and descriptions printable before they reach help or completion, and drops enum choices with control characters, which would split completion output.
 - A repository's `.yt.toml` comes from whoever wrote the repository: it may pick among the user's profiles and set the default project, but never suggests a sign-in URL.
 - Files yt creates (downloads, editor buffers) are opened with `create_new`, so a symbolic link is never followed.
 

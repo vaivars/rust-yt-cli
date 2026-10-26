@@ -411,6 +411,32 @@ async fn a_read_from_a_disabled_endpoint_moves_to_one_still_on() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn a_read_moved_to_a_project_without_the_app_says_so() {
+    let server = MockServer::start().await;
+    disabled_after_first_description(&server).await;
+    Mock::given(method("GET"))
+        .and(path(ATTACHED))
+        .respond_with(ResponseTemplate::new(404).set_body_raw(
+            r#"{"error":"Not Found","error_description":"HTTP handler not found by path hidden-fields/api/issue"}"#,
+            "application/json",
+        ))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let output = run(
+        &enabled(&server),
+        &["app", "hidden-fields", "get-issue", "WEB-1"],
+    )
+    .await;
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = common::stderr(&output);
+    assert!(
+        stderr.contains("the hidden-fields app is not attached to this issue's project"),
+        "{stderr}"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn a_write_to_a_disabled_endpoint_is_never_sent_again() {
     let server = MockServer::start().await;
     disabled_after_first_description(&server).await;
@@ -437,6 +463,100 @@ async fn a_write_to_a_disabled_endpoint_is_never_sent_again() {
     let stderr = common::stderr(&output);
     assert!(
         stderr.contains("disabled this endpoint") && stderr.contains("yt app hidden-fields --help"),
+        "{stderr}"
+    );
+}
+
+fn without_updates() -> String {
+    let mut document: Value = serde_json::from_str(DESCRIPTION).unwrap();
+    for item in document["paths"].as_object_mut().unwrap().values_mut() {
+        item.as_object_mut().unwrap().remove("post");
+    }
+    document.to_string()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_command_the_cached_description_lacks_is_looked_up_once_more() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(META))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_raw(without_updates(), "application/json"),
+        )
+        .up_to_n_times(1)
+        .with_priority(1)
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(META))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(DESCRIPTION, "application/json"))
+        .expect(2)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path(GLOBAL))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"status": "updated"})))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let env = env_for(&server, "");
+    let output = run(&env, &["app", "add", "hidden-fields"]).await;
+    assert!(
+        common::stderr(&output).contains(": get-issue\n"),
+        "{}",
+        common::stderr(&output)
+    );
+    let output = run(
+        &env,
+        &[
+            "app",
+            "hidden-fields",
+            "update-issue",
+            "WEB-1",
+            "--field",
+            "X",
+            "--value",
+            "1",
+        ],
+    )
+    .await;
+    assert!(output.status.success(), "{}", common::stderr(&output));
+    let output = run(&env, &["app", "hidden-fields", "get-isue", "WEB-1"]).await;
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        common::stderr(&output).contains("unrecognized subcommand 'get-isue'"),
+        "{}",
+        common::stderr(&output)
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_project_without_the_app_is_not_asked_twice() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path(META))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(attached_only(), "application/json"))
+        .expect(2)
+        .mount(&server)
+        .await;
+    Mock::given(path(ATTACHED))
+        .respond_with(ResponseTemplate::new(404).set_body_raw(
+            r#"{"error":"Not Found","error_description":"HTTP handler not found by path hidden-fields/api/issue"}"#,
+            "application/json",
+        ))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let output = run(
+        &enabled(&server),
+        &["app", "hidden-fields", "get-issue", "WEB-1"],
+    )
+    .await;
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = common::stderr(&output);
+    assert!(
+        stderr.contains("the hidden-fields app is not attached to this issue's project"),
         "{stderr}"
     );
 }
@@ -506,6 +626,29 @@ async fn help_lists_the_apps_commands() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn help_is_coloured_as_yt_decides() {
+    let server = MockServer::start().await;
+    describe(&server, DESCRIPTION).await;
+    let env = enabled(&server);
+    for (flags, coloured) in [(&[][..], true), (&["--no-color"][..], false)] {
+        let mut command = env.command();
+        command
+            .args(["app", "hidden-fields", "get-issue", "--help"])
+            .args(flags)
+            .env("YOUTRACK_TOKEN", TOKEN)
+            .env_remove("NO_COLOR")
+            .env("CLICOLOR_FORCE", "1");
+        let output = tokio::task::spawn_blocking(move || command.output().unwrap())
+            .await
+            .unwrap();
+        assert!(output.status.success(), "{}", common::stderr(&output));
+        let page = common::stdout(&output);
+        assert_eq!(page.contains("\u{1b}["), coloured, "{flags:?}: {page:?}");
+        assert!(!page.contains('\u{fffd}'), "{flags:?}: {page:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn commands_complete_from_the_cache_without_the_server() {
     let server = MockServer::start().await;
     describe(&server, DESCRIPTION).await;
@@ -534,4 +677,6 @@ async fn commands_complete_from_the_cache_without_the_server() {
         text.contains("--fields") && text.contains("--full"),
         "{text}"
     );
+    let text = complete("yt app hidden-fields get-issue WEB-1 --profile ");
+    assert!(text.contains("acme"), "{text}");
 }

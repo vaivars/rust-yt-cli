@@ -34,7 +34,7 @@ impl RunAsyncWith<&Ctx> for Completion {
     }
 }
 
-static COMPLETIONS: [usage_rs::complete::CompletionOverlay<'static>; 1] =
+pub(crate) static COMPLETIONS: [usage_rs::complete::CompletionOverlay<'static>; 1] =
     [usage_rs::complete::CompletionOverlay::async_any(
         "PROFILE",
         complete_profiles,

@@ -83,7 +83,7 @@ fn split_globals(words: &[OsString]) -> (Vec<&OsStr>, Vec<&OsStr>) {
     let flags = <Globals as CommandArgs>::COMMAND.flags;
     let mut lifted = Vec::new();
     let mut kept = Vec::new();
-    let mut words = words.iter().map(OsString::as_os_str);
+    let mut words = words.iter().map(OsString::as_os_str).peekable();
     while let Some(word) = words.next() {
         let text = word.to_str().unwrap_or_default();
         if text == "--" {
@@ -97,15 +97,14 @@ fn split_globals(words: &[OsString]) -> (Vec<&OsStr>, Vec<&OsStr>) {
                 None => (long, false),
             };
             match flags.iter().find(|flag| flag.longs.contains(&name)) {
-                Some(flag) => {
-                    lifted.push(word);
-                    if flag.takes_value
-                        && !attached
-                        && let Some(value) = words.next()
-                    {
-                        lifted.push(value);
+                Some(flag) if flag.takes_value && !attached => {
+                    // Without its value the flag stays, so the app's parser reports it missing.
+                    match words.next_if(|value| !value.to_string_lossy().starts_with('-')) {
+                        Some(value) => lifted.extend([word, value]),
+                        None => kept.push(word),
                     }
                 }
+                Some(_) => lifted.push(word),
                 None => kept.push(word),
             }
         } else if let Some(shorts) = text.strip_prefix('-')
@@ -177,6 +176,27 @@ mod tests {
             run_words(&cli),
             ["hidden-fields", "get-issue", "WEB-1", "--fields", "A"]
         );
+    }
+
+    #[test]
+    fn a_global_flag_without_its_value_is_left_for_the_app_parser() {
+        for words in [
+            ["app", "hidden-fields", "get-issue", "WEB-1", "--profile"].as_slice(),
+            [
+                "app",
+                "hidden-fields",
+                "get-issue",
+                "WEB-1",
+                "--format",
+                "--fields",
+            ]
+            .as_slice(),
+        ] {
+            let cli = lifted(words);
+            assert_eq!(cli.globals.profile, None);
+            assert_eq!(cli.globals.format, None);
+            assert_eq!(run_words(&cli), words[1..]);
+        }
     }
 
     #[test]

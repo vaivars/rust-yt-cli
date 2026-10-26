@@ -86,6 +86,11 @@ impl Output {
         self.emit(&printable(text))
     }
 
+    /// Writes text that yt styled itself from printable parts, such as a help page, as it is.
+    pub fn styled(&self, text: &str) -> Result<()> {
+        self.emit(text)
+    }
+
     fn emit(&self, text: &str) -> Result<()> {
         if self.is_closed() {
             return Ok(());
