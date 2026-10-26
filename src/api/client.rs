@@ -247,6 +247,7 @@ impl Client {
                 method: method.to_string(),
                 path: url.path().to_string(),
                 status: 200,
+                code: None,
                 message: unexpected(StatusCode::OK, &text),
                 help: None,
             }
@@ -454,6 +455,7 @@ fn decode<T: DeserializeOwned>(url: &Url, body: &str) -> Result<T> {
             method: "GET".into(),
             path: url.path().to_string(),
             status: 200,
+            code: None,
             message,
             help: None,
         }

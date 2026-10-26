@@ -166,6 +166,7 @@ mod tests {
             oauth_client_id: None,
             ca_file: None,
             revocable: false,
+            apps: vec![],
         }
     }
 

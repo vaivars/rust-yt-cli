@@ -14,18 +14,8 @@ pub struct SchemaCache {
 
 impl SchemaCache {
     pub fn new(cache_dir: &Path, profile: &str, ttl: Duration) -> Self {
-        let profile: String = profile
-            .chars()
-            .map(|c| {
-                if c.is_alphanumeric() || c == '-' || c == '_' {
-                    c
-                } else {
-                    '_'
-                }
-            })
-            .collect();
         Self {
-            dir: cache_dir.join(profile).join("schema"),
+            dir: crate::dirs::profile_cache(cache_dir, profile).join("schema"),
             ttl,
         }
     }

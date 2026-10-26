@@ -69,7 +69,7 @@ impl RunAsyncWith<&Ctx> for Api {
     }
 }
 
-async fn read_body(source: &str) -> yt::Result<serde_json::Value> {
+pub(crate) async fn read_body(source: &str) -> yt::Result<serde_json::Value> {
     let source = source.to_string();
     let text = tokio::task::spawn_blocking(move || -> std::io::Result<String> {
         if source == "-" {

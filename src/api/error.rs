@@ -19,11 +19,11 @@ struct ErrorChild {
 }
 
 pub fn api_error(method: &Method, path: &str, status: StatusCode, body: &str) -> miette::Report {
-    let message = match serde_json::from_str::<ErrorBody>(body) {
+    let (code, message) = match serde_json::from_str::<ErrorBody>(body) {
         Ok(parsed) if parsed.error.is_some() || parsed.error_description.is_some() => {
-            describe(&parsed, status)
+            (parsed.error.clone(), describe(&parsed, status))
         }
-        _ => unexpected(status, body),
+        _ => (None, unexpected(status, body)),
     };
     let help = match status.as_u16() {
         403 => Some(
@@ -36,6 +36,7 @@ pub fn api_error(method: &Method, path: &str, status: StatusCode, body: &str) ->
         method: method.to_string(),
         path: path.to_string(),
         status: status.as_u16(),
+        code,
         message,
         help,
     }
@@ -86,6 +87,26 @@ fn describe(body: &ErrorBody, status: StatusCode) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_error_code_is_kept() {
+        let report = api_error(
+            &Method::GET,
+            "/api/extensionEndpoints/app/global/issue",
+            StatusCode::FORBIDDEN,
+            r#"{"error":"disabled","error_description":"switched off"}"#,
+        );
+        let Some(YtError::Api { code, message, .. }) = report.downcast_ref::<YtError>() else {
+            panic!("{report:?}");
+        };
+        assert_eq!(code.as_deref(), Some("disabled"));
+        assert_eq!(message, "switched off");
+        let report = api_error(&Method::GET, "/api/x", StatusCode::BAD_GATEWAY, "<html>");
+        assert!(matches!(
+            report.downcast_ref::<YtError>(),
+            Some(YtError::Api { code: None, .. })
+        ));
+    }
 
     #[test]
     fn an_echoed_token_is_redacted_from_the_excerpt() {

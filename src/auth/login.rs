@@ -144,6 +144,9 @@ pub async fn login(le: &LoginEnv<'_>, request: LoginRequest) -> Result<LoginOutc
             .or_else(|| previous.and_then(|existing| existing.oauth_client_id.clone())),
         ca_file: le.http.ca_file.clone(),
         revocable: revocable && oauth.is_some(),
+        apps: previous
+            .map(|existing| existing.apps.clone())
+            .unwrap_or_default(),
     };
     le.store.set_profile(&name, &profile)?;
     if config.default_profile.is_none() {
@@ -939,6 +942,7 @@ mod tests {
             oauth_client_id: None,
             ca_file: None,
             revocable: false,
+            apps: vec![],
         }
     }
 

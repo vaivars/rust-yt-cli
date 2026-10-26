@@ -36,6 +36,9 @@ pub struct Profile {
     pub ca_file: Option<PathBuf>,
     #[serde(default)]
     pub revocable: bool,
+    /// Ids of the YouTrack apps `yt app` runs for this profile.
+    #[serde(default)]
+    pub apps: Vec<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -84,6 +87,23 @@ impl ConfigStore {
                 profile.ca_file.as_deref().and_then(Path::to_str),
             );
             set_flag(table, "revocable", profile.revocable);
+            Ok(())
+        })
+    }
+
+    /// Sets the profile's `apps`, removing the key when there are none.
+    pub fn set_apps(&self, name: &str, apps: &[String]) -> Result<()> {
+        self.edit(|doc| {
+            let table = self.profile_table(doc, name)?;
+            if apps.is_empty() {
+                table.remove("apps");
+            } else {
+                table["apps"] = value(
+                    apps.iter()
+                        .map(String::as_str)
+                        .collect::<toml_edit::Array>(),
+                );
+            }
             Ok(())
         })
     }
@@ -226,6 +246,7 @@ mod tests {
             oauth_client_id: Some("yt-cli".into()),
             ca_file: None,
             revocable: false,
+            apps: vec![],
         }
     }
 
@@ -262,6 +283,36 @@ mod tests {
         assert!(text.contains("# work"), "{text}");
         assert!(text.contains("color_hint = \"keep me\""), "{text}");
         assert!(text.contains("auth = \"oauth\""), "{text}");
+    }
+
+    #[test]
+    fn apps_are_set_and_removed_without_touching_the_rest() {
+        let (_dir, store) = store_with(
+            "# mine\n[profiles.acme] # work\nurl = \"https://acme.youtrack.cloud\"\nauth = \"token\"\n",
+        );
+        store
+            .set_apps("acme", &["hidden-fields".into(), "other".into()])
+            .unwrap();
+        let text = std::fs::read_to_string(store.path()).unwrap();
+        assert!(
+            text.contains("apps = [\"hidden-fields\", \"other\"]"),
+            "{text}"
+        );
+        assert!(text.contains("# mine") && text.contains("# work"), "{text}");
+        assert_eq!(
+            store.load().unwrap().profiles["acme"].apps,
+            ["hidden-fields", "other"]
+        );
+        store
+            .set_profile("acme", &profile("https://acme.youtrack.cloud"))
+            .unwrap();
+        assert_eq!(
+            store.load().unwrap().profiles["acme"].apps,
+            ["hidden-fields", "other"]
+        );
+        store.set_apps("acme", &[]).unwrap();
+        let text = std::fs::read_to_string(store.path()).unwrap();
+        assert!(!text.contains("apps"), "{text}");
     }
 
     #[test]
