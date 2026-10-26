@@ -1,4 +1,5 @@
 mod api;
+mod app;
 mod article;
 mod auth;
 mod board;
@@ -12,6 +13,7 @@ mod project;
 mod shared;
 mod time;
 
+use std::ffi::OsString;
 use std::process::ExitCode;
 
 use usage_rs::{Cli, Subcommands};
@@ -52,6 +54,8 @@ pub(crate) enum Command {
     Article(article::ArticleGroup),
     /// Work with agile boards and sprints
     Board(board::BoardGroup),
+    /// Run commands of YouTrack apps that describe their API
+    App(app::AppGroup),
     /// Manage profiles (a YouTrack instance and an account)
     Profile(profile::Profile),
     /// Show and change settings
@@ -62,7 +66,11 @@ pub(crate) enum Command {
     Completion(completion::Completion),
 }
 
-pub(crate) fn run(cli: Yt) -> ExitCode {
+pub(crate) fn run(cli: Yt, argv: &[OsString]) -> ExitCode {
+    let cli = match app::lift_globals(cli, argv) {
+        Ok(cli) => cli,
+        Err(error) => return report(error),
+    };
     let env = Env::from_process();
     yt::logger::init(yt::logger::level(
         cli.globals.verbose,
@@ -177,7 +185,10 @@ fn configure_terminal(globals: &Globals, ctx: &Ctx) {
 }
 
 fn report(error: miette::Report) -> ExitCode {
-    yt::ui::eprint_raw(&render(&error));
+    match error.downcast_ref::<yt::YtError>() {
+        Some(yt::YtError::CommandLine(text)) => yt::ui::eprint_raw(text.trim_end()),
+        _ => yt::ui::eprint_raw(&render(&error)),
+    }
     ExitCode::from(yt::error::exit_code(&error))
 }
 

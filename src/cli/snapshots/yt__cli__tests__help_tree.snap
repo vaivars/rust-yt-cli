@@ -11,6 +11,7 @@ Usage: yt [FLAGS] <SUBCOMMAND>
 Commands:
   api         Send a request to the YouTrack REST API and print its JSON
               response
+  app         Run commands of YouTrack apps that describe their API
   article     Work with knowledge base articles
   auth        Sign in and manage credentials
   board       Work with agile boards and sprints
@@ -1558,6 +1559,93 @@ Arguments:
   <BOARD>   Board name or ID
   <SPRINT>  Sprint name or ID
   <ID>…     Issue IDs or URLs; `-` reads IDs from stdin
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt app ===
+Run commands of YouTrack apps that describe their API
+
+Usage: yt app <SUBCOMMAND>
+
+Commands:
+  add     Check that an app is installed and use it with the profile
+  list    List the apps yt can use and which are enabled [aliases: ls]
+  remove  Stop using an app with the profile
+  help    Print this message or the help of the given subcommand(s)
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+An app enabled with `yt app add` runs as `yt app <APP> <COMMAND>`; `yt app <APP>
+--help` lists its commands.
+
+=== yt app list ===
+List the apps yt can use and which are enabled
+
+Usage: yt app list
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt app add ===
+Check that an app is installed and use it with the profile
+
+Usage: yt app add <APP>
+
+Arguments:
+  <APP>  App ID, as `yt app list` shows it
+
+Flags:
+  -h, --help               Print help
+
+Global flags:
+      --profile <PROFILE>  Profile to use [env: YT_PROFILE]
+      --format <FORMAT>    Output format (default: table) [env: YT_FORMAT]
+                           [possible values: table, json, ndjson]
+  -v, --verbose            More log output: -v for debug, -vv for trace
+  -q, --quiet              Only print errors
+      --no-color           Disable color
+      --no-input           Fail instead of prompting [env: YT_NO_INPUT]
+  -y, --yes                Confirm destructive actions without asking
+
+=== yt app remove ===
+Stop using an app with the profile
+
+Usage: yt app remove <APP>
+
+Arguments:
+  <APP>  App ID, as `yt app list` shows it
 
 Flags:
   -h, --help               Print help

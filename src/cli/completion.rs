@@ -75,8 +75,11 @@ pub(crate) fn answer(argv: &[OsString]) -> ExitCode {
     else {
         return ExitCode::FAILURE;
     };
-    if let Some(answer) = runtime.block_on(app().completion_request(argv)) {
-        print!("{answer}");
+    if let Some(request) = usage_rs::complete::CompletionRequest::parse(argv) {
+        print!(
+            "{}",
+            runtime.block_on(super::app::complete::answer(&request))
+        );
     }
     ExitCode::SUCCESS
 }

@@ -8,5 +8,5 @@ fn main() -> ExitCode {
     if argv.first().is_some_and(|word| word == "__complete_word__") {
         return cli::completion::answer(&argv);
     }
-    cli::run(cli::Yt::parse())
+    cli::run(cli::Yt::parse(), &argv)
 }

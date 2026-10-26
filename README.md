@@ -3,7 +3,7 @@
 A command line interface for [JetBrains YouTrack](https://www.jetbrains.com/youtrack/),
 written in Rust. Not affiliated with JetBrains.
 
-> **Status:** early releases (0.x). Covers sign-in, profiles, settings, issues (search, show, create, edit, commands, comments, tags, links, attachments), projects, time tracking, articles, boards and sprints, and `yt api`. Commands and output may change before 1.0.
+> **Status:** early releases (0.x). Covers sign-in, profiles, settings, issues (search, show, create, edit, commands, comments, tags, links, attachments), projects, time tracking, articles, boards and sprints, YouTrack apps that describe their API (`yt app`), and `yt api`. Commands and output may change before 1.0.
 
 ## Install
 
@@ -68,6 +68,28 @@ yt api 'admin/projects?$top=5' --fields shortName,name
 ```
 
 Every command has `--help`. Commands that print data also take `--format json` or `--format ndjson` (or `YT_FORMAT`) for scripts.
+
+## YouTrack apps
+
+Some YouTrack apps describe their REST endpoints in an OpenAPI document at `/api/extensionEndpoints/<app>/meta/openapi.json`. `yt` turns those endpoints into commands:
+
+```sh
+yt app list                      # the apps yt knows, and which are enabled
+yt app add hidden-fields         # check that the app is installed, then use it with this profile
+yt app hidden-fields --help      # the commands the app offers on this instance
+yt app hidden-fields get-issue WEB-42 --fields 'LLM Session'
+yt app hidden-fields update-issue WEB-42 --field 'LLM Session' --value '{"text": "where I stopped"}'
+```
+
+The commands come from the app's document on your instance, so they match what an administrator has switched on. `yt` caches the document for `cache_ttl`; `yt app add` fetches it again. A command prints the app's JSON response. A request body field is read as JSON, or sent as text when it is not valid JSON; `--input FILE` (or `-` for stdin) sends a whole body instead.
+
+`yt app remove` stops using an app with the profile. With `YOUTRACK_URL`, every app `yt` knows can be used without `yt app add`. While no app is enabled, `yt` never calls one.
+
+An app works with `yt` when it follows the [convention for client authors](https://github.com/vaivars/yt-app-expose-fields-api#for-client-authors) and has an entry in `src/apps/registry.rs`:
+
+- Paths under the app's own extension endpoints become commands, named by `x-youtrack-command` or else by `operationId`. Operations that share a command name are one action at different scopes, and `yt` uses the `global` one when it is listed.
+- Parameters marked with `x-youtrack-entity` become arguments, other query parameters become flags (a `boolean` is a switch), and each top-level property of a JSON request body becomes a flag.
+- Anything else is skipped, so an app can add to its document without breaking `yt`.
 
 ## Configuration
 

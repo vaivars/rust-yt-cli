@@ -1,6 +1,7 @@
 #![deny(unreachable_pub)]
 
 pub mod api;
+pub mod apps;
 pub mod auth;
 pub mod browser;
 pub mod config;

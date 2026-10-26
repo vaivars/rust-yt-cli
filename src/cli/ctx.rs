@@ -5,6 +5,7 @@ use secrecy::SecretString;
 use usage_rs::spec::ValueEnum as _;
 use yt::YtError;
 use yt::api::{Client, TokenSource};
+use yt::apps::cache::AppCache;
 use yt::auth::token_source::{OAuthToken, StaticToken};
 use yt::config::file::{ConfigStore, GlobalConfig, Profile};
 use yt::config::profile::ProfileChoice;
@@ -178,6 +179,17 @@ impl Ctx {
     pub(crate) fn schema_cache(&self) -> yt::Result<SchemaCache> {
         let ttl = self.settings()?.settings.cache_ttl()?;
         Ok(SchemaCache::for_profile(
+            &self.dirs.cache,
+            self.profile()?.label(),
+            &self.instance()?,
+            ttl,
+        ))
+    }
+
+    /// The app description cache of the active profile.
+    pub(crate) fn app_cache(&self) -> yt::Result<AppCache> {
+        let ttl = self.settings()?.settings.cache_ttl()?;
+        Ok(AppCache::for_profile(
             &self.dirs.cache,
             self.profile()?.label(),
             &self.instance()?,

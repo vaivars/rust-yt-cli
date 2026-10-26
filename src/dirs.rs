@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::env::Env;
 use crate::error::{Result, YtError};
@@ -46,6 +46,21 @@ impl Dirs {
     pub fn config_file(&self) -> PathBuf {
         self.config.join("config.toml")
     }
+}
+
+/// The cache directory of one profile, with the name made safe to use as a directory.
+pub fn profile_cache(cache: &Path, profile: &str) -> PathBuf {
+    let name: String = profile
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    cache.join(name)
 }
 
 #[cfg(test)]

@@ -117,10 +117,45 @@ pub enum YtError {
         method: String,
         path: String,
         status: u16,
+        /// The `error` code of YouTrack's JSON error body.
+        code: Option<String>,
         message: String,
         #[help]
         help: Option<String>,
     },
+
+    #[error("unknown app '{name}'")]
+    #[diagnostic(code(yt::unknown_app))]
+    UnknownApp {
+        name: String,
+        #[help]
+        help: Option<String>,
+    },
+
+    #[error("the {id} app is not enabled for profile {profile}")]
+    #[diagnostic(
+        code(yt::app_not_enabled),
+        help("run `yt app add {id} --profile {profile}`")
+    )]
+    AppNotEnabled { id: String, profile: String },
+
+    #[error("the {id} app is not installed on {url}")]
+    #[diagnostic(code(yt::app_not_installed))]
+    AppNotInstalled {
+        id: String,
+        url: String,
+        #[help]
+        help: Option<String>,
+    },
+
+    #[error("the {id} app describes its API in a way yt cannot use: {message}")]
+    #[diagnostic(code(yt::app_document))]
+    AppDocument { id: String, message: String },
+
+    /// A command line error that usage-rs already rendered.
+    #[error("{0}")]
+    #[diagnostic(code(yt::usage))]
+    CommandLine(String),
 
     #[error("network error: {0}")]
     #[diagnostic(
@@ -211,7 +246,13 @@ fn boxed<'a>(text: Option<&'a String>) -> Option<Box<dyn std::fmt::Display + 'a>
 
 pub fn exit_code(report: &miette::Report) -> u8 {
     match report.downcast_ref::<YtError>() {
-        Some(YtError::Usage { .. } | YtError::InputRequired { .. }) => 2,
+        Some(
+            YtError::Usage { .. }
+            | YtError::InputRequired { .. }
+            | YtError::UnknownApp { .. }
+            | YtError::AppNotEnabled { .. }
+            | YtError::CommandLine(_),
+        ) => 2,
         Some(
             YtError::NotSignedIn { .. }
             | YtError::CredentialRejected { .. }
@@ -267,6 +308,22 @@ mod tests {
         );
         assert_eq!(code(YtError::Cancelled), 130);
         assert_eq!(code(YtError::NoProfile), 1);
+        assert_eq!(
+            code(YtError::UnknownApp {
+                name: "x".into(),
+                help: None
+            }),
+            2
+        );
+        assert_eq!(code(YtError::CommandLine("error: x".into())), 2);
+        assert_eq!(
+            code(YtError::AppNotInstalled {
+                id: "x".into(),
+                url: "https://acme.youtrack.cloud".into(),
+                help: None
+            }),
+            1
+        );
     }
 
     fn plain(diagnostic: &dyn miette::Diagnostic) -> String {
@@ -283,6 +340,7 @@ mod tests {
             method: "GET".into(),
             path: "/api/issues".into(),
             status: 400,
+            code: None,
             message: "bad\u{1b}[2J query".into(),
             help: Some("try\u{7} again".into()),
         });
@@ -290,6 +348,7 @@ mod tests {
             method: "GET".into(),
             path: "/api/issues".into(),
             status: 400,
+            code: None,
             message: "inner\u{9b}1A".into(),
             help: None,
         })
