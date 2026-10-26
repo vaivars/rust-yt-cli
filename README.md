@@ -81,15 +81,16 @@ yt app hidden-fields get-issue WEB-42 --fields 'LLM Session'
 yt app hidden-fields update-issue WEB-42 --field 'LLM Session' --value '{"text": "where I stopped"}'
 ```
 
-The commands come from the app's document on your instance, so they match what an administrator has switched on. `yt` caches the document for `cache_ttl`; `yt app add` fetches it again. A command prints the app's JSON response. A request body field is read as JSON, or sent as text when it is not valid JSON; `--input FILE` (or `-` for stdin) sends a whole body instead.
+The commands come from the app's document on your instance, so they match what an administrator has switched on. `yt` caches the document for `cache_ttl`, and fetches it again for a command the cached copy does not have; `yt app add` always fetches it. A command prints the app's JSON response.
 
 `yt app remove` stops using an app with the profile. With `YOUTRACK_URL`, every app `yt` knows can be used without `yt app add`. While no app is enabled, `yt` never calls one.
 
 An app works with `yt` when it follows the [convention for client authors](https://github.com/vaivars/yt-app-expose-fields-api#for-client-authors) and has an entry in `src/apps/registry.rs`:
 
 - Paths under the app's own extension endpoints become commands, named by `x-youtrack-command` or else by `operationId`. Operations that share a command name are one action at different scopes, and `yt` uses the `global` one when it is listed.
-- Parameters marked with `x-youtrack-entity` become arguments, other query parameters become flags (a `boolean` is a switch), and each top-level property of a JSON request body becomes a flag.
-- Anything else is skipped, so an app can add to its document without breaking `yt`.
+- Path parameters and required parameters marked with `x-youtrack-entity` become arguments; an issue or article argument takes an ID or a URL. Other query parameters become flags, and a `boolean` one is a switch that is either given or not.
+- Each top-level property of a JSON request body becomes a flag. A `string` property is sent as typed; any other is read as JSON, or sent as text when it is not valid JSON. `--input FILE` (or `-` for stdin) sends a whole body instead.
+- Anything else is skipped, so an app can add to its document without breaking `yt`. An operation with a required parameter or body field that `yt` cannot turn into an argument or flag is left out.
 
 ## Configuration
 

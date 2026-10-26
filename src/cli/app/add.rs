@@ -22,7 +22,9 @@ impl RunAsyncWith<&Ctx> for Add {
         let app = known(&self.id)?;
         let profile = ctx.profile()?;
         let client = ctx.client().await?;
-        let api = yt::apps::load(client, &ctx.app_cache()?, app, true, &global_longs()).await?;
+        let api = yt::apps::load(client, &ctx.app_cache()?, app, true, &global_longs())
+            .await?
+            .api;
         let commands: Vec<&str> = api
             .operations
             .iter()

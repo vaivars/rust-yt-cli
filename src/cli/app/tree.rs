@@ -12,6 +12,8 @@ use crate::cli::Globals;
 pub(crate) enum Parsed {
     Help(String),
     Call(Call),
+    /// The first word names no command of the app; the error is ready to report.
+    UnknownCommand(miette::Report),
 }
 
 pub(crate) struct Call {
@@ -341,6 +343,11 @@ pub(crate) fn parse(api: &AppApi, words: &[OsString]) -> yt::Result<Parsed> {
                     .push(utf8(&tree, &argv, arg.name, value)?);
             }
             Ok(_) => {}
+            Err(error @ Error::UnexpectedArg { token })
+                if selected.is_none() && !token.starts_with(b"-") =>
+            {
+                return Ok(Parsed::UnknownCommand(rendered(&tree, &argv, &error)));
+            }
             Err(error) => return failure(&tree, &argv, error),
         }
     }
@@ -420,16 +427,25 @@ fn failure(tree: &Tree, argv: &[&OsStr], error: Error<'static, '_>) -> yt::Resul
         Error::HelpAll { cmd } => Some((*cmd, Page::All)),
         _ => None,
     };
-    match page
-        .and_then(|(cmd, page)| help::page(tree.spec, tree.root, argv, cmd, page, Style::auto()))
-    {
+    // yt decides colour (`--no-color`, `color`, `NO_COLOR`), not usage-rs.
+    let style = if console::colors_enabled() {
+        Style::COLOURED
+    } else {
+        Style::PLAIN
+    };
+    match page.and_then(|(cmd, page)| help::page(tree.spec, tree.root, argv, cmd, page, style)) {
         Some(text) => Ok(Parsed::Help(text)),
         None => Err(rendered(tree, argv, &error)),
     }
 }
 
 fn rendered(tree: &Tree, argv: &[&OsStr], error: &Error<'_, '_>) -> miette::Report {
-    YtError::CommandLine(usage_rs::render_failure(tree.spec, argv, error)).into()
+    let text = if console::colors_enabled_stderr() {
+        usage_rs::render_failure(tree.spec, argv, error)
+    } else {
+        usage_rs::render_failure_plain(tree.spec, argv, error)
+    };
+    YtError::CommandLine(text).into()
 }
 
 #[cfg(test)]
@@ -449,23 +465,25 @@ mod tests {
         match parse(&api(), &words(words_)).unwrap() {
             Parsed::Call(call) => call,
             Parsed::Help(page) => panic!("{page}"),
+            Parsed::UnknownCommand(error) => panic!("{error:?}"),
         }
     }
 
     fn error(words_: &[&str]) -> String {
-        match parse(&api(), &words(words_)) {
-            Err(error) => match error.downcast_ref::<YtError>() {
-                Some(YtError::CommandLine(text)) => console::strip_ansi_codes(text).into_owned(),
-                _ => panic!("{error:?}"),
-            },
+        let error = match parse(&api(), &words(words_)) {
+            Err(error) | Ok(Parsed::UnknownCommand(error)) => error,
             Ok(_) => panic!("{words_:?} parsed"),
+        };
+        match error.downcast_ref::<YtError>() {
+            Some(YtError::CommandLine(text)) => console::strip_ansi_codes(text).into_owned(),
+            _ => panic!("{error:?}"),
         }
     }
 
     fn help(words_: &[&str]) -> String {
         match parse(&api(), &words(words_)).unwrap() {
             Parsed::Help(page) => console::strip_ansi_codes(&page).into_owned(),
-            Parsed::Call(_) => panic!("{words_:?} is not help"),
+            _ => panic!("{words_:?} is not help"),
         }
     }
 
@@ -512,6 +530,10 @@ mod tests {
         assert!(text.contains("--value"), "{text}");
         let text = error(&["update-issue", "WEB-1", "--field", "x", "--input", "-"]);
         assert!(text.contains("cannot be used with"), "{text}");
+        assert!(matches!(
+            parse(&api(), &words(&["get-isue", "WEB-1"])),
+            Ok(Parsed::UnknownCommand(_))
+        ));
         let text = error(&["get-isue"]);
         assert!(
             text.contains("unrecognized subcommand 'get-isue'"),

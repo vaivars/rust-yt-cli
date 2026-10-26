@@ -169,7 +169,7 @@ mod tests {
             path: path.into(),
             scope: Scope::Global,
             positionals: vec![positional(location, param, Some(Entity::Issue))],
-            flags: vec![query_flag("fields", "fields"), query_flag("full", "full")],
+            flags: vec![query_flag("full", "full"), query_flag("fields", "fields")],
             body: None,
         }
     }
@@ -232,7 +232,7 @@ mod tests {
         assert_eq!(request.method, HttpMethod::GET);
         assert_eq!(
             request.path_and_query,
-            "/api/extensionEndpoints/app/global/issue?issueId=WEB-1&fields=HF+External+ID%2CPriority&full=true"
+            "/api/extensionEndpoints/app/global/issue?issueId=WEB-1&full=true&fields=HF+External+ID%2CPriority"
         );
         assert_eq!(request.body, None);
     }
